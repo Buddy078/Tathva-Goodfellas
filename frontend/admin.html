@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CivicPulse - Ward Operations Command Center</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Leaflet CSS & JS for Offline-Resilient GIS Mapping -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    #map { height: 420px; border-radius: 0.5rem; }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans">
+
+  <!-- Top Navigation Header -->
+  <header class="bg-slate-800 border-b border-slate-700 px-6 py-3.5 flex justify-between items-center shadow-md">
+    <div class="flex items-center space-x-3">
+      <span class="text-xl font-black tracking-wider text-blue-400">CIVICPULSE</span>
+      <span class="text-xs bg-blue-900/60 text-blue-300 font-semibold px-2.5 py-1 rounded border border-blue-700">
+        MUNICIPAL COMMAND CENTER
+      </span>
+    </div>
+    <div class="flex items-center space-x-4 text-xs">
+      <span class="text-slate-400">Ward: <strong class="text-slate-200">Zone 4 (Central)</strong></span>
+      <span class="text-slate-400">Officer: <strong class="text-slate-200">Engineer J. Ramanathan</strong></span>
+      <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+        ● GIS Feed Active
+      </span>
+    </div>
+  </header>
+
+  <!-- Feedback Toast -->
+  <div id="toast" class="hidden fixed top-16 right-6 z-50 p-4 rounded-lg shadow-lg text-xs font-semibold"></div>
+
+  <!-- Main Grid Layout -->
+  <div class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 p-6">
+    
+    <!-- Left Column: Map & Active Incidents (8 Cols) -->
+    <section class="lg:col-span-8 space-y-6 flex flex-col">
+      
+      <!-- Interactive Leaflet GIS Incident Map -->
+      <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-md">
+        <div class="flex justify-between items-center mb-3">
+          <div>
+            <h2 class="text-sm font-bold text-white tracking-wide">Live Spatial Incident GIS Map</h2>
+            <p class="text-xs text-slate-400">Real-time geo-clustering & deduplicated hazard locations</p>
+          </div>
+          <button onclick="loadHazards()" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded transition">
+            ↻ Sync GIS Coordinates
+          </button>
+        </div>
+        <div id="map" class="z-0 border border-slate-600"></div>
+      </div>
+
+      <!-- Priority Triage & SLA Work Order Queue -->
+      <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-md flex-1">
+        <div class="flex justify-between items-center mb-3">
+          <div>
+            <h2 class="text-sm font-bold text-white">Priority Triage Work Orders</h2>
+            <p class="text-xs text-slate-400">Auto-prioritized by severity weight and community deduplication upvotes</p>
+          </div>
+          <span id="ticketCountBadge" class="text-xs font-bold bg-slate-700 px-2.5 py-1 rounded text-slate-300">0 Active</span>
+        </div>
+        
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-slate-300">
+            <thead class="bg-slate-700/60 uppercase text-[10px] text-slate-400 border-b border-slate-600">
+              <tr>
+                <th class="p-2.5">ID</th>
+                <th class="p-2.5">Title & Category</th>
+                <th class="p-2.5">Severity</th>
+                <th class="p-2.5">Merged Reports</th>
+                <th class="p-2.5">SLA Target</th>
+                <th class="p-2.5">Workflow Status</th>
+              </tr>
+            </thead>
+            <tbody id="ticketsTableBody" class="divide-y divide-slate-700">
+              <tr>
+                <td colspan="6" class="p-4 text-center text-slate-500">Fetching active tickets...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Right Column: Governance Broadcast Dispatcher (4 Cols) -->
+    <aside class="lg:col-span-4 bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-md flex flex-col">
+      <div class="mb-4">
+        <h2 class="text-sm font-bold text-white">Broadcast Public Advisory</h2>
+        <p class="text-xs text-slate-400 mt-0.5">Publish planned utility disruptions & transit notices directly to citizens</p>
+      </div>
+
+      <form id="noticeForm" onsubmit="publishNotice(event)" class="space-y-3.5 text-xs flex-1 flex flex-col justify-between">
+        <div class="space-y-3">
+          <div>
+            <label class="block font-semibold mb-1 text-slate-300">Advisory Headline</label>
+            <input type="text" id="nTitle" required placeholder="e.g. 11kV Substation Maintenance Outage" class="w-full p-2.5 rounded bg-slate-900 border border-slate-600 text-white outline-none focus:border-blue-500">
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block font-semibold mb-1 text-slate-300">Category</label>
+              <select id="nCategory" class="w-full p-2.5 rounded bg-slate-900 border border-slate-600 text-white outline-none">
+                <option value="POWER_SHUTDOWN">Power Shutdown</option>
+                <option value="WATER_OUTAGE">Water Outage</option>
+                <option value="TRAFFIC_DIVERSION">Traffic Diversion</option>
+                <option value="CIVIC_EVENT">Civic Event</option>
+              </select>
+            </div>
+            <div>
+              <label class="block font-semibold mb-1 text-slate-300">Department</label>
+              <input type="text" id="nDept" required placeholder="e.g. TANGEDCO" class="w-full p-2.5 rounded bg-slate-900 border border-slate-600 text-white outline-none">
+            </div>
+          </div>
+
+          <div>
+            <label class="block font-semibold mb-1 text-slate-300">Affected Zones / Wards</label>
+            <input type="text" id="nAreas" required placeholder="e.g. Gandhipuram, 7th Cross, Sector 2" class="w-full p-2.5 rounded bg-slate-900 border border-slate-600 text-white outline-none">
+          </div>
+
+          <div>
+            <label class="block font-semibold mb-1 text-slate-300">Advisory Details & Guidance</label>
+            <textarea id="nDesc" rows="3" required placeholder="Specify timing, alternative water tankers, or detour routes..." class="w-full p-2.5 rounded bg-slate-900 border border-slate-600 text-white outline-none"></textarea>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block font-semibold mb-1 text-slate-300">Start Time</label>
+              <input type="datetime-local" id="nStart" required class="w-full p-2 rounded bg-slate-900 border border-slate-600 text-white outline-none">
+            </div>
+            <div>
+              <label class="block font-semibold mb-1 text-slate-300">End Time</label>
+              <input type="datetime-local" id="nEnd" required class="w-full p-2 rounded bg-slate-900 border border-slate-600 text-white outline-none">
+            </div>
+          </div>
+
+          <div class="flex items-center space-x-2 pt-1">
+            <input type="checkbox" id="nCritical" class="rounded bg-slate-900 border-slate-600 text-red-600 focus:ring-0">
+            <label for="nCritical" class="font-medium text-red-400">Flag as Critical Emergency Advisory</label>
+          </div>
+        </div>
+
+        <button type="submit" id="broadcastBtn" class="w-full py-3 bg-blue-600 hover:bg-blue-500 font-bold text-white rounded-lg transition shadow-md mt-4">
+          📢 Broadcast to Citizen Feeds
+        </button>
+      </form>
+    </aside>
+
+  </div>
+
+  <script>
+    const API_BASE = "http://localhost:8000";
+    let map, markerLayerGroup;
+
+    // Initialize GIS Map with ESRI Dark Canvas basemap
+    function initMap() {
+      map = L.map('map').setView([11.0168, 76.9558], 14);
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
+        maxZoom: 16
+      }).addTo(map);
+
+      markerLayerGroup = L.layerGroup().addTo(map);
+    }
+
+    function showToast(msg, isSuccess = true) {
+      const toast = document.getElementById('toast');
+      toast.className = `fixed top-16 right-6 z-50 p-4 rounded-lg shadow-lg text-xs font-semibold ${
+        isSuccess ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'
+      }`;
+      toast.innerText = msg;
+      toast.classList.remove('hidden');
+      setTimeout(() => toast.classList.add('hidden'), 4000);
+    }
+
+    // Load Hazards from API & Render Color-Coded Markers + Actionable Table
+    async function loadHazards() {
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/hazards`);
+        const data = await res.json();
+        
+        markerLayerGroup.clearLayers();
+        const tbody = document.getElementById('ticketsTableBody');
+        tbody.innerHTML = "";
+        document.getElementById('ticketCountBadge').innerText = `${data.count} Active`;
+
+        if (!data.hazards || data.hazards.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-500">No active work orders.</td></tr>`;
+          return;
+        }
+
+        data.hazards.forEach(h => {
+          // Dynamic marker colors based on severity
+          const markerColor = h.severity === 'CRITICAL' ? '#ef4444' : (h.severity === 'HIGH' ? '#f59e0b' : '#3b82f6');
+          
+          const marker = L.circleMarker([h.latitude, h.longitude], {
+            radius: 8 + Math.min(h.upvotes, 10),
+            fillColor: markerColor,
+            color: '#ffffff',
+            weight: 2,
+            opacity: 1,
+            fillOpacity: 0.85
+          });
+
+          marker.bindPopup(`
+            <div class="text-slate-900 text-xs font-sans">
+              <strong class="text-sm">${h.title}</strong><br/>
+              <span class="font-semibold text-slate-500">[${h.category}]</span><br/>
+              <span>Severity: <strong style="color:${markerColor}">${h.severity}</strong></span><br/>
+              <span>Merged Upvotes: <strong>${h.upvotes} citizens</strong></span><br/>
+              <span>Current Status: <strong>${h.status}</strong></span><br/>
+              <span>SLA Target: ${new Date(h.sla_deadline).toLocaleTimeString()}</span>
+            </div>
+          `);
+          markerLayerGroup.addLayer(marker);
+
+          // Append Interactive Row to Table
+          const tr = document.createElement('tr');
+          tr.className = "hover:bg-slate-700/40 transition";
+          tr.innerHTML = `
+            <td class="p-2.5 font-mono text-slate-400">#${h.id}</td>
+            <td class="p-2.5">
+              <div class="font-semibold text-white">${h.title}</div>
+              <div class="text-[10px] text-slate-400">${h.category}</div>
+            </td>
+            <td class="p-2.5">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold ${
+                h.severity === 'CRITICAL' ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
+                h.severity === 'HIGH' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
+                'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+              }">${h.severity}</span>
+            </td>
+            <td class="p-2.5 font-bold text-amber-400">🔥 ${h.upvotes}</td>
+            <td class="p-2.5 text-slate-300 font-mono text-[11px]">
+              ${new Date(h.sla_deadline).toLocaleDateString()} ${new Date(h.sla_deadline).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+            </td>
+            <td class="p-2.5">
+              <select onchange="changeStatus(${h.id}, this.value)" class="bg-slate-900 border border-slate-600 text-[11px] rounded px-2 py-1 text-slate-200 outline-none focus:border-blue-500 cursor-pointer">
+                <option value="PENDING_TRIAGE" ${h.status === 'PENDING_TRIAGE' ? 'selected' : ''}>PENDING</option>
+                <option value="IN_PROGRESS" ${h.status === 'IN_PROGRESS' ? 'selected' : ''}>DISPATCHED</option>
+                <option value="RESOLVED" ${h.status === 'RESOLVED' ? 'selected' : ''}>RESOLVED</option>
+              </select>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+      } catch (err) {
+        showToast("Error retrieving spatial hazard queue.", false);
+      }
+    }
+
+    // Update Status of Work Order via PATCH endpoint
+    async function changeStatus(id, newStatus) {
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/hazards/${id}/status`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: newStatus })
+        });
+        if (res.ok) {
+          showToast(`Work order #${id} status changed to ${newStatus}`);
+        } else {
+          showToast("Failed to update status on server", false);
+        }
+      } catch (err) {
+        showToast("Network connection error", false);
+      }
+    }
+
+    // Publish Governance Advisory via REST API
+    async function publishNotice(e) {
+      e.preventDefault();
+      const btn = document.getElementById('broadcastBtn');
+      btn.disabled = true;
+      btn.innerText = "Publishing Notice...";
+
+      const payload = {
+        title: document.getElementById('nTitle').value,
+        category: document.getElementById('nCategory').value,
+        department: document.getElementById('nDept').value,
+        affected_areas: document.getElementById('nAreas').value,
+        description: document.getElementById('nDesc').value,
+        start_time: new Date(document.getElementById('nStart').value).toISOString(),
+        end_time: new Date(document.getElementById('nEnd').value).toISOString(),
+        is_critical: document.getElementById('nCritical').checked
+      };
+
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/notices`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          showToast("Advisory successfully broadcasted to citizen portal!");
+          document.getElementById('noticeForm').reset();
+          setDefaultTimes();
+        } else {
+          showToast("Failed to broadcast advisory.", false);
+        }
+      } catch (err) {
+        showToast("Error communicating with backend API.", false);
+      } finally {
+        btn.disabled = false;
+        btn.innerText = "📢 Broadcast to Citizen Feeds";
+      }
+    }
+
+    function setDefaultTimes() {
+      const now = new Date();
+      const later = new Date(now.getTime() + (4 * 60 * 60 * 1000));
+      document.getElementById('nStart').value = now.toISOString().slice(0, 16);
+      document.getElementById('nEnd').value = later.toISOString().slice(0, 16);
+    }
+
+    // Boot
+    window.onload = () => {
+      initMap();
+      loadHazards();
+      setDefaultTimes();
+    };
+  </script>
+</body>
+</html>

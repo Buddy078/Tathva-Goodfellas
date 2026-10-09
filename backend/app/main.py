@@ -22,7 +22,7 @@ DB_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgrespassword@local
 def get_db_connection():
     return psycopg2.connect(DB_URL, cursor_factory=RealDictCursor)
 
-# Pydantic Schemas
+# --- Pydantic Data Models ---
 class HazardReport(BaseModel):
     title: str
     category: str  # ROAD, SANITATION, ELECTRICAL, WATER
@@ -41,6 +41,10 @@ class PublicNoticeCreate(BaseModel):
     end_time: datetime
     is_critical: Optional[bool] = False
 
+class HazardStatusUpdate(BaseModel):
+    status: str  # PENDING_TRIAGE, IN_PROGRESS, RESOLVED
+
+# --- Health Check ---
 @app.get("/health")
 def health_check():
     return {"status": "online", "system": "CivicPulse Core"}
@@ -51,7 +55,6 @@ def report_hazard(report: HazardReport):
     conn = get_db_connection()
     cur = conn.cursor()
     try:
-        # Check for existing open hazard of the same category within 50 meters
         dedup_query = """
             SELECT id, title, upvotes, 
                    ST_Distance(geom::geography, ST_SetSRID(ST_MakePoint(%s, %s), 4326)::geography) as distance_meters
@@ -66,7 +69,6 @@ def report_hazard(report: HazardReport):
         existing = cur.fetchone()
 
         if existing:
-            # Duplicate found -> Increment community upvotes
             update_query = """
                 UPDATE hazards 
                 SET upvotes = upvotes + 1 
@@ -82,7 +84,6 @@ def report_hazard(report: HazardReport):
                 "data": updated_hazard
             }
 
-        # No duplicate -> Calculate SLA based on severity
         sla_hours = 24 if report.severity == "CRITICAL" else (48 if report.severity == "HIGH" else 168)
         sla_deadline = datetime.utcnow() + timedelta(hours=sla_hours)
 
@@ -106,7 +107,7 @@ def report_hazard(report: HazardReport):
         cur.close()
         conn.close()
 
-# 2. GET ALL HAZARDS (For Admin GIS Map)
+# 2. GET ALL HAZARDS (For Admin GIS Map & Queue)
 @app.get("/api/v1/hazards")
 def list_hazards():
     conn = get_db_connection()
@@ -126,7 +127,26 @@ def list_hazards():
         cur.close()
         conn.close()
 
-# 3. GET GOVERNANCE NOTICES (For Citizen Home Tab)
+# 3. UPDATE HAZARD WORK-ORDER STATUS (Admin Triage Workflow)
+@app.patch("/api/v1/hazards/{hazard_id}/status")
+def update_hazard_status(hazard_id: int, payload: HazardStatusUpdate):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute(
+            "UPDATE hazards SET status = %s WHERE id = %s RETURNING id, title, status;",
+            (payload.status, hazard_id)
+        )
+        updated = cur.fetchone()
+        if not updated:
+            raise HTTPException(status_code=404, detail="Hazard ticket not found")
+        conn.commit()
+        return {"action": "UPDATED", "hazard": updated}
+    finally:
+        cur.close()
+        conn.close()
+
+# 4. GET GOVERNANCE NOTICES (For Citizen Home Feed)
 @app.get("/api/v1/notices")
 def list_notices():
     conn = get_db_connection()
@@ -139,7 +159,7 @@ def list_notices():
         cur.close()
         conn.close()
 
-# 4. PUBLISH NOTICE (For Admin Portal)
+# 5. PUBLISH NOTICE (For Admin Portal Broadcast)
 @app.post("/api/v1/notices")
 def create_notice(notice: PublicNoticeCreate):
     conn = get_db_connection()
