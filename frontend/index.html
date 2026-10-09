@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CivicPulse - Citizen Hub</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 flex justify-center min-h-screen text-slate-800">
+
+  <div class="w-full max-w-md bg-white min-h-screen flex flex-col shadow-xl border-x border-slate-200 pb-16">
+    
+    <!-- Top Header -->
+    <header class="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-900 text-white">
+      <div>
+        <h1 class="text-lg font-bold tracking-tight">CivicPulse</h1>
+        <p class="text-xs text-slate-400">Ward 7 • Coimbatore Central</p>
+      </div>
+      <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-emerald-500 text-white">
+        System Live
+      </span>
+    </header>
+
+    <!-- Tab Bar -->
+    <div class="flex border-b border-slate-200 bg-slate-50 text-sm font-semibold">
+      <button id="tabNoticesBtn" onclick="switchTab('notices')" class="flex-1 py-3 text-center border-b-2 border-blue-600 text-blue-600 bg-white transition">
+        🏛️ Governance
+      </button>
+      <button id="tabReportBtn" onclick="switchTab('report')" class="flex-1 py-3 text-center border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition">
+        ⚠️ Report Hazard
+      </button>
+    </div>
+
+    <!-- Feedback Toast -->
+    <div id="statusToast" class="hidden m-3 p-3 rounded-lg text-xs font-medium border"></div>
+
+    <!-- TAB 1: GOVERNANCE FEED -->
+    <main id="noticesTab" class="p-4 space-y-4 flex-1">
+      <div class="flex justify-between items-center">
+        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500">Public Advisories</h2>
+        <button onclick="loadNotices()" class="text-xs text-blue-600 hover:underline">↻ Refresh</button>
+      </div>
+      <div id="noticesList" class="space-y-3">
+        <p class="text-xs text-slate-400">Loading notices...</p>
+      </div>
+    </main>
+
+    <!-- TAB 2: REPORT HAZARD FORM -->
+    <main id="reportTab" class="p-4 space-y-4 flex-1 hidden">
+      <h2 class="text-sm font-bold text-slate-800">Report an Urban Hazard</h2>
+      <p class="text-xs text-slate-500">Auto-routes to ward teams and merges nearby duplicates.</p>
+
+      <form id="hazardForm" onsubmit="submitHazard(event)" class="space-y-3 text-xs">
+        <div>
+          <label class="block font-semibold mb-1 text-slate-700">Issue Title</label>
+          <input type="text" id="title" required placeholder="e.g. Open Stormwater Drain" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+        </div>
+
+        <div>
+          <label class="block font-semibold mb-1 text-slate-700">Category</label>
+          <select id="category" class="w-full p-2.5 border rounded-lg bg-white outline-none">
+            <option value="ROAD">Road & Potholes</option>
+            <option value="SANITATION">Sanitation & Garbage Dump</option>
+            <option value="ELECTRICAL">Electrical & Streetlights</option>
+            <option value="WATER">Water Supply & Leakage</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block font-semibold mb-1 text-slate-700">Severity Assessment</label>
+          <select id="severity" class="w-full p-2.5 border rounded-lg bg-white outline-none">
+            <option value="CRITICAL">Critical (Life Hazard / 24h SLA)</option>
+            <option value="HIGH">High (Traffic Block / 48h SLA)</option>
+            <option value="MEDIUM">Medium (General / 7-Day SLA)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block font-semibold mb-1 text-slate-700">Description</label>
+          <textarea id="description" rows="2" placeholder="Provide extra landmark details..." class="w-full p-2.5 border rounded-lg outline-none"></textarea>
+        </div>
+
+        <!-- Coordinates Box -->
+        <div class="p-3 bg-slate-50 border rounded-lg space-y-2">
+          <div class="flex justify-between items-center">
+            <span class="font-semibold text-slate-700">GPS Coordinates</span>
+            <button type="button" onclick="detectGPS()" class="text-[11px] text-blue-600 font-semibold hover:underline">📍 Get Device GPS</button>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <input type="number" step="any" id="lat" required placeholder="Latitude" value="11.0168" class="p-1.5 border rounded bg-white">
+            <input type="number" step="any" id="lon" required placeholder="Longitude" value="76.9558" class="p-1.5 border rounded bg-white">
+          </div>
+          <p class="text-[10px] text-slate-400 leading-tight">Default pre-set to test ward. Change slightly (<0.0003°) to demo auto-deduplication merging.</p>
+        </div>
+
+        <button type="submit" id="submitBtn" class="w-full py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition">
+          Submit Work Order
+        </button>
+      </form>
+    </main>
+
+  </div>
+
+  <script>
+    const API_BASE = "http://localhost:8000";
+
+    function switchTab(tab) {
+      const isNotices = tab === 'notices';
+      document.getElementById('noticesTab').classList.toggle('hidden', !isNotices);
+      document.getElementById('reportTab').classList.toggle('hidden', isNotices);
+      
+      document.getElementById('tabNoticesBtn').className = isNotices 
+        ? "flex-1 py-3 text-center border-b-2 border-blue-600 text-blue-600 bg-white transition font-semibold"
+        : "flex-1 py-3 text-center border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition font-semibold";
+      
+      document.getElementById('tabReportBtn').className = !isNotices 
+        ? "flex-1 py-3 text-center border-b-2 border-blue-600 text-blue-600 bg-white transition font-semibold"
+        : "flex-1 py-3 text-center border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition font-semibold";
+      
+      if (isNotices) loadNotices();
+    }
+
+    function showToast(message, isSuccess = true, isMerge = false) {
+      const toast = document.getElementById('statusToast');
+      toast.className = `m-3 p-3 rounded-lg text-xs font-medium border ${
+        isMerge ? 'bg-amber-50 border-amber-300 text-amber-900' :
+        isSuccess ? 'bg-emerald-50 border-emerald-300 text-emerald-900' :
+        'bg-red-50 border-red-300 text-red-900'
+      }`;
+      toast.innerHTML = message;
+      toast.classList.remove('hidden');
+      setTimeout(() => toast.classList.add('hidden'), 6000);
+    }
+
+    function detectGPS() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          pos => {
+            document.getElementById('lat').value = pos.coords.latitude.toFixed(6);
+            document.getElementById('lon').value = pos.coords.longitude.toFixed(6);
+            showToast("📍 Acquired precise device GPS coordinates.", true);
+          },
+          err => showToast("Could not retrieve GPS: " + err.message, false)
+        );
+      }
+    }
+
+    async function loadNotices() {
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/notices`);
+        const data = await res.json();
+        const container = document.getElementById('noticesList');
+        container.innerHTML = "";
+
+        if (!data.notices || data.notices.length === 0) {
+          container.innerHTML = "<p class='text-xs text-slate-400'>No active notices in your ward.</p>";
+          return;
+        }
+
+        data.notices.forEach(n => {
+          const card = document.createElement('article');
+          card.className = `p-3.5 border rounded-lg shadow-sm transition ${n.is_critical ? 'bg-red-50/50 border-red-300' : 'bg-white border-slate-200'}`;
+          card.innerHTML = `
+            <div class="flex justify-between items-start mb-1">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold ${n.is_critical ? 'bg-red-600 text-white' : 'bg-slate-100 text-slate-700'}">
+                ${n.category}
+              </span>
+              <span class="text-[10px] text-slate-400">${new Date(n.start_time).toLocaleDateString()}</span>
+            </div>
+            <h3 class="text-xs font-bold text-slate-900">${n.title}</h3>
+            <p class="text-[11px] text-slate-600 mt-1">${n.description}</p>
+            <div class="mt-2 text-[10px] font-medium text-slate-500 flex items-center gap-1">
+              <span>📍 ${n.affected_areas}</span> • <span>🏢 ${n.department}</span>
+            </div>
+          `;
+          container.appendChild(card);
+        });
+      } catch (e) {
+        showToast("Error connecting to backend API.", false);
+      }
+    }
+
+    async function submitHazard(e) {
+      e.preventDefault();
+      const btn = document.getElementById('submitBtn');
+      btn.innerText = "Processing...";
+      btn.disabled = true;
+
+      const payload = {
+        title: document.getElementById('title').value,
+        category: document.getElementById('category').value,
+        severity: document.getElementById('severity').value,
+        description: document.getElementById('description').value,
+        latitude: parseFloat(document.getElementById('lat').value),
+        longitude: parseFloat(document.getElementById('lon').value)
+      };
+
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/hazards`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const result = await res.json();
+
+        if (result.action === "DEDUPLICATED_AND_MERGED") {
+          showToast(`⚡ <strong>Spatial Match Found!</strong> ${result.message}`, true, true);
+        } else {
+          showToast(`✅ <strong>Success:</strong> Ticket #${result.data.id} created with SLA priority.`, true, false);
+        }
+        document.getElementById('hazardForm').reset();
+        document.getElementById('lat').value = "11.0168";
+        document.getElementById('lon').value = "76.9558";
+      } catch (err) {
+        showToast("Failed to submit hazard report: " + err.message, false);
+      } finally {
+        btn.innerText = "Submit Work Order";
+        btn.disabled = false;
+      }
+    }
+
+    // Initial load
+    loadNotices();
+  </script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+# Python bytecode & virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# Docker volumes & local data
+pgdata/
+*.log
+
+# Editor settings
+.vscode/
+.idea/
