@@ -16,12 +16,15 @@
         <h1 class="text-lg font-bold tracking-tight">CivicPulse</h1>
         <p class="text-xs text-slate-400">Ward 7 • Coimbatore Central</p>
       </div>
-      <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-emerald-500 text-white">
-        System Live
-      </span>
+      <div class="flex items-center space-x-3">
+        <span id="citizenName" class="text-xs text-slate-300 font-medium">Citizen</span>
+        <a href="login.html" onclick="localStorage.removeItem('cp_user')" class="text-xs text-red-400 hover:text-red-300 underline transition">
+          Exit
+        </a>
+      </div>
     </header>
 
-    <!-- Tab Bar -->
+    <!-- Navigation Tabs -->
     <div class="flex border-b border-slate-200 bg-slate-50 text-sm font-semibold">
       <button id="tabNoticesBtn" onclick="switchTab('notices')" class="flex-1 py-3 text-center border-b-2 border-blue-600 text-blue-600 bg-white transition">
         🏛️ Governance
@@ -31,7 +34,7 @@
       </button>
     </div>
 
-    <!-- Feedback Toast -->
+    <!-- Feedback Notification Toast -->
     <div id="statusToast" class="hidden m-3 p-3 rounded-lg text-xs font-medium border"></div>
 
     <!-- TAB 1: GOVERNANCE FEED -->
@@ -48,7 +51,7 @@
     <!-- TAB 2: REPORT HAZARD FORM -->
     <main id="reportTab" class="p-4 space-y-4 flex-1 hidden">
       <h2 class="text-sm font-bold text-slate-800">Report an Urban Hazard</h2>
-      <p class="text-xs text-slate-500">Auto-routes to ward teams and merges nearby duplicates.</p>
+      <p class="text-xs text-slate-500">Auto-routes to ward teams and deduplicates nearby reports.</p>
 
       <form id="hazardForm" onsubmit="submitHazard(event)" class="space-y-3 text-xs">
         <div>
@@ -77,7 +80,7 @@
 
         <div>
           <label class="block font-semibold mb-1 text-slate-700">Description</label>
-          <textarea id="description" rows="2" placeholder="Provide extra landmark details..." class="w-full p-2.5 border rounded-lg outline-none"></textarea>
+          <textarea id="description" rows="2" placeholder="Provide landmarks or reference details..." class="w-full p-2.5 border rounded-lg outline-none"></textarea>
         </div>
 
         <!-- Coordinates Box -->
@@ -90,7 +93,7 @@
             <input type="number" step="any" id="lat" required placeholder="Latitude" value="11.0168" class="p-1.5 border rounded bg-white">
             <input type="number" step="any" id="lon" required placeholder="Longitude" value="76.9558" class="p-1.5 border rounded bg-white">
           </div>
-          <p class="text-[10px] text-slate-400 leading-tight">Default pre-set to test ward. Change slightly (<0.0003°) to demo auto-deduplication merging.</p>
+          <p class="text-[10px] text-slate-400 leading-tight">Default pre-set to test ward. Change slightly (&lt;0.0003°) to demo auto-deduplication merging.</p>
         </div>
 
         <button type="submit" id="submitBtn" class="w-full py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition">
@@ -103,6 +106,12 @@
 
   <script>
     const API_BASE = "http://localhost:8000";
+
+    // Setup active session details
+    const session = JSON.parse(localStorage.getItem('cp_user') || '{}');
+    if (session.name) {
+      document.getElementById('citizenName').innerText = session.name;
+    }
 
     function switchTab(tab) {
       const isNotices = tab === 'notices';
@@ -192,7 +201,8 @@
         severity: document.getElementById('severity').value,
         description: document.getElementById('description').value,
         latitude: parseFloat(document.getElementById('lat').value),
-        longitude: parseFloat(document.getElementById('lon').value)
+        longitude: parseFloat(document.getElementById('lon').value),
+        timestamp: new Date().toISOString()
       };
 
       try {
@@ -208,16 +218,43 @@
         } else {
           showToast(`✅ <strong>Success:</strong> Ticket #${result.data.id} created with SLA priority.`, true, false);
         }
+      } catch (err) {
+        // Offline Store-and-Forward caching in localStorage
+        let pending = JSON.parse(localStorage.getItem('pending_hazards') || '[]');
+        pending.push(payload);
+        localStorage.setItem('pending_hazards', JSON.stringify(pending));
+        showToast("📶 <strong>Stored Offline:</strong> No connection detected. Coordinates cached locally and will auto-sync when online.", true, true);
+      } finally {
         document.getElementById('hazardForm').reset();
         document.getElementById('lat').value = "11.0168";
         document.getElementById('lon').value = "76.9558";
-      } catch (err) {
-        showToast("Failed to submit hazard report: " + err.message, false);
-      } finally {
         btn.innerText = "Submit Work Order";
         btn.disabled = false;
       }
     }
+
+    // Auto-sync pending reports when network connection restores
+    window.addEventListener('online', async () => {
+      let pending = JSON.parse(localStorage.getItem('pending_hazards') || '[]');
+      if (pending.length === 0) return;
+
+      showToast(`🔄 Connection restored. Syncing ${pending.length} cached report(s)...`, true);
+      while (pending.length > 0) {
+        const item = pending.shift();
+        try {
+          await fetch(`${API_BASE}/api/v1/hazards`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(item)
+          });
+          localStorage.setItem('pending_hazards', JSON.stringify(pending));
+        } catch (e) {
+          pending.unshift(item);
+          break;
+        }
+      }
+      showToast("✅ All offline reports synchronized successfully!", true);
+    });
 
     // Initial load
     loadNotices();

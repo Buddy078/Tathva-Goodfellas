@@ -44,10 +44,43 @@ class PublicNoticeCreate(BaseModel):
 class HazardStatusUpdate(BaseModel):
     status: str  # PENDING_TRIAGE, IN_PROGRESS, RESOLVED
 
+class UserLogin(BaseModel):
+    username: str
+    password: str
+    role: str  # "citizen" or "admin"
+
 # --- Health Check ---
 @app.get("/health")
 def health_check():
     return {"status": "online", "system": "CivicPulse Core"}
+
+@app.post("/api/v1/auth/login")
+def login(creds: UserLogin):
+    # Authentic offline evaluation credentials
+    if creds.role == "admin":
+        if creds.username == "admin@coimbatore.gov.in" and creds.password == "admin123":
+            return {
+                "token": "cp_jwt_admin_session_token_9981",
+                "role": "admin",
+                "name": "Engineer J. Ramanathan",
+                "ward": "Zone 4 (Central)",
+                "redirect": "admin.html"
+            }
+        raise HTTPException(status_code=401, detail="Invalid municipal officer credentials")
+
+    elif creds.role == "citizen":
+        # Any citizen email or demo credentials accepted
+        if creds.password == "citizen123" or len(creds.password) >= 4:
+            return {
+                "token": "cp_jwt_citizen_session_token_1042",
+                "role": "citizen",
+                "name": creds.username.split("@")[0].title() if "@" in creds.username else "Citizen",
+                "ward": "Ward 7",
+                "redirect": "index.html"
+            }
+        raise HTTPException(status_code=401, detail="Password must be at least 4 characters")
+
+    raise HTTPException(status_code=400, detail="Invalid role specified")
 
 # 1. HAZARD INGESTION WITH SPATIAL DEDUPLICATION (50-meter PostGIS check)
 @app.post("/api/v1/hazards")

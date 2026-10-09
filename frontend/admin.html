@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CivicPulse - Ward Operations Command Center</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Leaflet CSS & JS for Offline-Resilient GIS Mapping -->
+  <!-- Leaflet CSS & JS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
@@ -23,11 +23,14 @@
       </span>
     </div>
     <div class="flex items-center space-x-4 text-xs">
-      <span class="text-slate-400">Ward: <strong class="text-slate-200">Zone 4 (Central)</strong></span>
-      <span class="text-slate-400">Officer: <strong class="text-slate-200">Engineer J. Ramanathan</strong></span>
+      <span class="text-slate-400">Ward: <strong id="officerWard" class="text-slate-200">Zone 4 (Central)</strong></span>
+      <span class="text-slate-400">Officer: <strong id="officerName" class="text-slate-200">Engineer J. Ramanathan</strong></span>
       <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
         ● GIS Feed Active
       </span>
+      <a href="login.html" onclick="localStorage.removeItem('cp_user')" class="bg-slate-700 hover:bg-slate-600 px-2.5 py-1 rounded text-red-300 hover:text-red-200 transition">
+        Logout
+      </a>
     </div>
   </header>
 
@@ -37,10 +40,10 @@
   <!-- Main Grid Layout -->
   <div class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 p-6">
     
-    <!-- Left Column: Map & Active Incidents (8 Cols) -->
+    <!-- Left Column: Map & Work Orders (8 Cols) -->
     <section class="lg:col-span-8 space-y-6 flex flex-col">
       
-      <!-- Interactive Leaflet GIS Incident Map -->
+      <!-- Interactive Leaflet GIS Incident Map (ESRI Dark Basemap) -->
       <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-md">
         <div class="flex justify-between items-center mb-3">
           <div>
@@ -156,6 +159,11 @@
     const API_BASE = "http://localhost:8000";
     let map, markerLayerGroup;
 
+    // Load active session details if available
+    const session = JSON.parse(localStorage.getItem('cp_user') || '{}');
+    if (session.name) document.getElementById('officerName').innerText = session.name;
+    if (session.ward) document.getElementById('officerWard').innerText = session.ward;
+
     // Initialize GIS Map with ESRI Dark Canvas basemap
     function initMap() {
       map = L.map('map').setView([11.0168, 76.9558], 14);
@@ -194,7 +202,6 @@
         }
 
         data.hazards.forEach(h => {
-          // Dynamic marker colors based on severity
           const markerColor = h.severity === 'CRITICAL' ? '#ef4444' : (h.severity === 'HIGH' ? '#f59e0b' : '#3b82f6');
           
           const marker = L.circleMarker([h.latitude, h.longitude], {
@@ -218,7 +225,7 @@
           `);
           markerLayerGroup.addLayer(marker);
 
-          // Append Interactive Row to Table
+          // Append Interactive Row to Table with dynamic PATCH selector
           const tr = document.createElement('tr');
           tr.className = "hover:bg-slate-700/40 transition";
           tr.innerHTML = `
