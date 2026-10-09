@@ -10,6 +10,15 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
     #map { height: 420px; border-radius: 0.5rem; }
+    .custom-popup .leaflet-popup-content-wrapper {
+      background: #0f172a;
+      color: #f8fafc;
+      border: 1px solid #334155;
+      border-radius: 0.5rem;
+    }
+    .custom-popup .leaflet-popup-tip {
+      background: #0f172a;
+    }
   </style>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans">
@@ -40,7 +49,7 @@
   <!-- Main Grid Layout -->
   <div class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 p-6">
     
-    <!-- Left Column: Map & Work Orders (8 Cols) -->
+    <!-- Left Column: Map & Active Incidents (8 Cols) -->
     <section class="lg:col-span-8 space-y-6 flex flex-col">
       
       <!-- Interactive Leaflet GIS Incident Map (ESRI Dark Basemap) -->
@@ -48,7 +57,7 @@
         <div class="flex justify-between items-center mb-3">
           <div>
             <h2 class="text-sm font-bold text-white tracking-wide">Live Spatial Incident GIS Map</h2>
-            <p class="text-xs text-slate-400">Real-time geo-clustering & deduplicated hazard locations</p>
+            <p class="text-xs text-slate-400">Click any ticket below to zoom to its location & inspect photographic proof</p>
           </div>
           <button onclick="loadHazards()" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded transition">
             ↻ Sync GIS Coordinates
@@ -62,26 +71,27 @@
         <div class="flex justify-between items-center mb-3">
           <div>
             <h2 class="text-sm font-bold text-white">Priority Triage Work Orders</h2>
-            <p class="text-xs text-slate-400">Auto-prioritized by severity weight and community deduplication upvotes</p>
+            <p class="text-xs text-slate-400">Click a row to focus map on the incident</p>
           </div>
           <span id="ticketCountBadge" class="text-xs font-bold bg-slate-700 px-2.5 py-1 rounded text-slate-300">0 Active</span>
         </div>
         
-        <div class="overflow-x-auto">
+        <div class="overflow-x-auto max-h-72 overflow-y-auto">
           <table class="w-full text-left text-xs text-slate-300">
-            <thead class="bg-slate-700/60 uppercase text-[10px] text-slate-400 border-b border-slate-600">
+            <thead class="bg-slate-700/60 uppercase text-[10px] text-slate-400 border-b border-slate-600 sticky top-0 bg-slate-800">
               <tr>
                 <th class="p-2.5">ID</th>
                 <th class="p-2.5">Title & Category</th>
                 <th class="p-2.5">Severity</th>
-                <th class="p-2.5">Merged Reports</th>
+                <th class="p-2.5">Merged</th>
+                <th class="p-2.5">Photo</th>
                 <th class="p-2.5">SLA Target</th>
-                <th class="p-2.5">Workflow Status</th>
+                <th class="p-2.5">Action Status</th>
               </tr>
             </thead>
             <tbody id="ticketsTableBody" class="divide-y divide-slate-700">
               <tr>
-                <td colspan="6" class="p-4 text-center text-slate-500">Fetching active tickets...</td>
+                <td colspan="7" class="p-4 text-center text-slate-500">Fetching active tickets...</td>
               </tr>
             </tbody>
           </table>
@@ -94,7 +104,7 @@
     <aside class="lg:col-span-4 bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-md flex flex-col">
       <div class="mb-4">
         <h2 class="text-sm font-bold text-white">Broadcast Public Advisory</h2>
-        <p class="text-xs text-slate-400 mt-0.5">Publish planned utility disruptions & transit notices directly to citizens</p>
+        <p class="text-xs text-slate-400 mt-0.5">Publish planned disruptions directly to citizen feeds</p>
       </div>
 
       <form id="noticeForm" onsubmit="publishNotice(event)" class="space-y-3.5 text-xs flex-1 flex flex-col justify-between">
@@ -155,16 +165,29 @@
 
   </div>
 
+  <!-- Lightbox Modal for Photo Inspection -->
+  <div id="imageModal" class="hidden fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4" onclick="closeImageModal()">
+    <div class="relative max-w-2xl max-h-[90vh] bg-slate-900 border border-slate-700 rounded-xl p-3 shadow-2xl" onclick="event.stopPropagation()">
+      <div class="flex justify-between items-center pb-2 border-b border-slate-800">
+        <span class="text-xs font-bold text-slate-300">Hazard Photo Evidence</span>
+        <button onclick="closeImageModal()" class="text-slate-400 hover:text-white text-xl font-bold px-1">&times;</button>
+      </div>
+      <div class="p-2 flex justify-center">
+        <img id="modalImg" src="" alt="Proof Preview" class="max-h-[70vh] w-auto rounded object-contain" />
+      </div>
+    </div>
+  </div>
+
   <script>
     const API_BASE = "http://localhost:8000";
     let map, markerLayerGroup;
+    const markersMap = {};
+    const hazardImagesMap = {};
 
-    // Load active session details if available
     const session = JSON.parse(localStorage.getItem('cp_user') || '{}');
     if (session.name) document.getElementById('officerName').innerText = session.name;
     if (session.ward) document.getElementById('officerWard').innerText = session.ward;
 
-    // Initialize GIS Map with ESRI Dark Canvas basemap
     function initMap() {
       map = L.map('map').setView([11.0168, 76.9558], 14);
       L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
@@ -185,7 +208,25 @@
       setTimeout(() => toast.classList.add('hidden'), 4000);
     }
 
-    // Load Hazards from API & Render Color-Coded Markers + Actionable Table
+    function openImageModal(id) {
+      const imgSrc = hazardImagesMap[id];
+      if (!imgSrc) return;
+      document.getElementById('modalImg').src = imgSrc;
+      document.getElementById('imageModal').classList.remove('hidden');
+    }
+
+    function closeImageModal() {
+      document.getElementById('imageModal').classList.add('hidden');
+      document.getElementById('modalImg').src = '';
+    }
+
+    function focusHazard(id, lat, lon) {
+      map.flyTo([lat, lon], 16, { animate: true, duration: 1.2 });
+      if (markersMap[id]) {
+        markersMap[id].openPopup();
+      }
+    }
+
     async function loadHazards() {
       try {
         const res = await fetch(`${API_BASE}/api/v1/hazards`);
@@ -197,11 +238,15 @@
         document.getElementById('ticketCountBadge').innerText = `${data.count} Active`;
 
         if (!data.hazards || data.hazards.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-500">No active work orders.</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-500">No active work orders.</td></tr>`;
           return;
         }
 
         data.hazards.forEach(h => {
+          if (h.image_data) {
+            hazardImagesMap[h.id] = h.image_data;
+          }
+
           const markerColor = h.severity === 'CRITICAL' ? '#ef4444' : (h.severity === 'HIGH' ? '#f59e0b' : '#3b82f6');
           
           const marker = L.circleMarker([h.latitude, h.longitude], {
@@ -213,25 +258,42 @@
             fillOpacity: 0.85
           });
 
-          marker.bindPopup(`
-            <div class="text-slate-900 text-xs font-sans">
-              <strong class="text-sm">${h.title}</strong><br/>
-              <span class="font-semibold text-slate-500">[${h.category}]</span><br/>
-              <span>Severity: <strong style="color:${markerColor}">${h.severity}</strong></span><br/>
-              <span>Merged Upvotes: <strong>${h.upvotes} citizens</strong></span><br/>
-              <span>Current Status: <strong>${h.status}</strong></span><br/>
-              <span>SLA Target: ${new Date(h.sla_deadline).toLocaleTimeString()}</span>
-            </div>
-          `);
-          markerLayerGroup.addLayer(marker);
+          const imageHtml = h.image_data 
+            ? `<div class="mt-2 border border-slate-700 rounded overflow-hidden">
+                 <img src="${h.image_data}" alt="Proof" class="w-full h-32 object-cover cursor-pointer hover:opacity-90" onclick="openImageModal('${h.id}')" />
+                 <span class="block text-[9px] text-center text-slate-400 py-0.5 bg-slate-900 cursor-pointer" onclick="openImageModal('${h.id}')">Click photo to enlarge</span>
+               </div>`
+            : `<div class="mt-2 text-[10px] italic text-slate-400 bg-slate-800/80 p-2 rounded text-center">No photo submitted with report</div>`;
 
-          // Append Interactive Row to Table with dynamic PATCH selector
+          marker.bindPopup(`
+            <div class="text-slate-100 text-xs font-sans max-w-[220px]">
+              <strong class="text-sm text-white">${h.title}</strong><br/>
+              <span class="font-semibold text-slate-400">[${h.category}]</span><br/>
+              <span class="text-[11px] text-slate-300 mt-1 block">${h.description || 'No additional details.'}</span>
+              <div class="mt-2 pt-1 border-t border-slate-700 flex justify-between items-center text-[11px]">
+                <span>Severity: <strong style="color:${markerColor}">${h.severity}</strong></span>
+                <span class="text-amber-400 font-bold">🔥 ${h.upvotes} Votes</span>
+              </div>
+              <div class="text-[10px] text-slate-400 mt-0.5">Status: <strong class="text-slate-200">${h.status}</strong></div>
+              ${imageHtml}
+            </div>
+          `, { className: 'custom-popup' });
+
+          markerLayerGroup.addLayer(marker);
+          markersMap[h.id] = marker;
+
           const tr = document.createElement('tr');
-          tr.className = "hover:bg-slate-700/40 transition";
+          tr.className = "hover:bg-slate-700/60 cursor-pointer transition select-none";
+          tr.onclick = (e) => {
+            if (e.target.tagName !== 'SELECT') {
+              focusHazard(h.id, h.latitude, h.longitude);
+            }
+          };
+
           tr.innerHTML = `
             <td class="p-2.5 font-mono text-slate-400">#${h.id}</td>
             <td class="p-2.5">
-              <div class="font-semibold text-white">${h.title}</div>
+              <div class="font-semibold text-white hover:text-blue-400 transition">${h.title}</div>
               <div class="text-[10px] text-slate-400">${h.category}</div>
             </td>
             <td class="p-2.5">
@@ -242,8 +304,13 @@
               }">${h.severity}</span>
             </td>
             <td class="p-2.5 font-bold text-amber-400">🔥 ${h.upvotes}</td>
+            <td class="p-2.5">
+              ${h.image_data 
+                ? `<span class="px-1.5 py-0.5 rounded text-[10px] bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30">📷 Proof</span>` 
+                : `<span class="text-[10px] text-slate-500">—</span>`}
+            </td>
             <td class="p-2.5 text-slate-300 font-mono text-[11px]">
-              ${new Date(h.sla_deadline).toLocaleDateString()} ${new Date(h.sla_deadline).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+              ${new Date(h.sla_deadline).toLocaleDateString([], {month:'short', day:'numeric'})} ${new Date(h.sla_deadline).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
             </td>
             <td class="p-2.5">
               <select onchange="changeStatus(${h.id}, this.value)" class="bg-slate-900 border border-slate-600 text-[11px] rounded px-2 py-1 text-slate-200 outline-none focus:border-blue-500 cursor-pointer">
@@ -261,7 +328,6 @@
       }
     }
 
-    // Update Status of Work Order via PATCH endpoint
     async function changeStatus(id, newStatus) {
       try {
         const res = await fetch(`${API_BASE}/api/v1/hazards/${id}/status`, {
@@ -272,14 +338,13 @@
         if (res.ok) {
           showToast(`Work order #${id} status changed to ${newStatus}`);
         } else {
-          showToast("Failed to update status on server", false);
+          showToast("Failed to update status", false);
         }
       } catch (err) {
         showToast("Network connection error", false);
       }
     }
 
-    // Publish Governance Advisory via REST API
     async function publishNotice(e) {
       e.preventDefault();
       const btn = document.getElementById('broadcastBtn');
@@ -325,7 +390,6 @@
       document.getElementById('nEnd').value = later.toISOString().slice(0, 16);
     }
 
-    // Boot
     window.onload = () => {
       initMap();
       loadHazards();

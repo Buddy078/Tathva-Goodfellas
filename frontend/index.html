@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CivicPulse - Citizen Hub</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/exif-js"></script>
 </head>
 <body class="bg-slate-100 flex justify-center min-h-screen text-slate-800">
 
@@ -49,11 +50,34 @@
     </main>
 
     <!-- TAB 2: REPORT HAZARD FORM -->
+<!-- TAB 2: REPORT HAZARD FORM -->
     <main id="reportTab" class="p-4 space-y-4 flex-1 hidden">
       <h2 class="text-sm font-bold text-slate-800">Report an Urban Hazard</h2>
       <p class="text-xs text-slate-500">Auto-routes to ward teams and deduplicates nearby reports.</p>
 
       <form id="hazardForm" onsubmit="submitHazard(event)" class="space-y-3 text-xs">
+        
+        <!-- PHOTO UPLOAD & EXIF GPS AUTO-EXTRACT -->
+        <div>
+          <label class="block font-semibold mb-1 text-slate-700">Hazard Photo Proof</label>
+          <div class="border-2 border-dashed border-slate-300 hover:border-blue-500 rounded-lg p-3 text-center transition cursor-pointer relative bg-slate-50">
+            <input type="file" id="hazardPhoto" accept="image/*" onchange="handlePhotoUpload(event)" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10">
+            <div id="uploadPrompt" class="space-y-1">
+              <span class="text-2xl">📸</span>
+              <p class="font-semibold text-slate-700">Upload or Snap Photo</p>
+              <p class="text-[10px] text-slate-400">Extracts GPS coordinates automatically from camera metadata</p>
+            </div>
+            <!-- Image Preview Box -->
+            <div id="imagePreviewBox" class="hidden flex items-center gap-3">
+              <img id="imagePreview" class="h-16 w-16 object-cover rounded border border-slate-300" src="" alt="Proof Preview" />
+              <div class="text-left">
+                <p id="imageFilename" class="font-semibold text-slate-800 truncate max-w-[180px]"></p>
+                <p id="exifStatus" class="text-[10px] font-medium text-emerald-600">Extracting EXIF...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div>
           <label class="block font-semibold mb-1 text-slate-700">Issue Title</label>
           <input type="text" id="title" required placeholder="e.g. Open Stormwater Drain" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
@@ -80,23 +104,29 @@
 
         <div>
           <label class="block font-semibold mb-1 text-slate-700">Description</label>
-          <textarea id="description" rows="2" placeholder="Provide landmarks or reference details..." class="w-full p-2.5 border rounded-lg outline-none"></textarea>
+          <textarea id="description" rows="2" placeholder="Provide extra landmark details..." class="w-full p-2.5 border rounded-lg outline-none"></textarea>
         </div>
 
         <!-- Coordinates Box -->
         <div class="p-3 bg-slate-50 border rounded-lg space-y-2">
           <div class="flex justify-between items-center">
-            <span class="font-semibold text-slate-700">GPS Coordinates</span>
-            <button type="button" onclick="detectGPS()" class="text-[11px] text-blue-600 font-semibold hover:underline">📍 Get Device GPS</button>
+            <span class="font-semibold text-slate-700">Detected GPS Location</span>
+            <button type="button" onclick="detectGPS()" class="text-[11px] text-blue-600 font-semibold hover:underline">📍 Use Live Device GPS</button>
           </div>
           <div class="grid grid-cols-2 gap-2">
-            <input type="number" step="any" id="lat" required placeholder="Latitude" value="11.0168" class="p-1.5 border rounded bg-white">
-            <input type="number" step="any" id="lon" required placeholder="Longitude" value="76.9558" class="p-1.5 border rounded bg-white">
+            <div>
+              <label class="text-[10px] text-slate-500">Latitude</label>
+              <input type="number" step="any" id="lat" required placeholder="Latitude" value="11.0168" class="w-full p-1.5 border rounded bg-white">
+            </div>
+            <div>
+              <label class="text-[10px] text-slate-500">Longitude</label>
+              <input type="number" step="any" id="lon" required placeholder="Longitude" value="76.9558" class="w-full p-1.5 border rounded bg-white">
+            </div>
           </div>
-          <p class="text-[10px] text-slate-400 leading-tight">Default pre-set to test ward. Change slightly (&lt;0.0003°) to demo auto-deduplication merging.</p>
+          <p id="geoSourceInfo" class="text-[10px] text-slate-400 leading-tight">Default pre-set. Uploading a geotagged photo will auto-populate these values.</p>
         </div>
 
-        <button type="submit" id="submitBtn" class="w-full py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition">
+        <button type="submit" id="submitBtn" class="w-full py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition shadow-md">
           Submit Work Order
         </button>
       </form>
@@ -189,6 +219,66 @@
       }
     }
 
+    let uploadedImageBase64 = null;
+
+    // Helper: Convert EXIF DMS (Degrees, Minutes, Seconds) array to Decimal Degrees
+    function convertDMSToDD(dms, ref) {
+      if (!dms || dms.length < 3) return null;
+      let dd = dms[0] + (dms[1] / 60) + (dms[2] / 3600);
+      if (ref === "S" || ref === "W") {
+        dd = dd * -1;
+      }
+      return dd;
+    }
+
+    function handlePhotoUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      // Show preview
+      document.getElementById('uploadPrompt').classList.add('hidden');
+      const previewBox = document.getElementById('imagePreviewBox');
+      previewBox.classList.remove('hidden');
+      document.getElementById('imageFilename').innerText = file.name;
+      const statusText = document.getElementById('exifStatus');
+      statusText.innerText = "Scanning EXIF metadata...";
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        uploadedImageBase64 = e.target.result;
+        document.getElementById('imagePreview').src = uploadedImageBase64;
+      };
+      reader.readAsDataURL(file);
+
+      // Extract EXIF GPS Metadata using EXIF.js
+      EXIF.getData(file, function() {
+        const latData = EXIF.getTag(this, "GPSLatitude");
+        const latRef = EXIF.getTag(this, "GPSLatitudeRef");
+        const lonData = EXIF.getTag(this, "GPSLongitude");
+        const lonRef = EXIF.getTag(this, "GPSLongitudeRef");
+
+        if (latData && lonData && latRef && lonRef) {
+          const lat = convertDMSToDD(latData, latRef);
+          const lon = convertDMSToDD(lonData, lonRef);
+
+          if (lat !== null && lon !== null) {
+            document.getElementById('lat').value = lat.toFixed(6);
+            document.getElementById('lon').value = lon.toFixed(6);
+            statusText.innerText = "📍 GPS auto-extracted from photo!";
+            statusText.className = "text-[10px] font-bold text-emerald-600";
+            document.getElementById('geoSourceInfo').innerHTML = `<span class="text-emerald-600 font-semibold">✓ Auto-filled from image metadata: (${lat.toFixed(4)}, ${lon.toFixed(4)})</span>`;
+            showToast("📸 <strong>GPS Extracted:</strong> Coordinates populated directly from photo EXIF metadata!", true);
+            return;
+          }
+        }
+        
+        // Fallback if image has no location header
+        statusText.innerText = "No EXIF coordinates found. Using device/manual GPS.";
+        statusText.className = "text-[10px] font-medium text-amber-600";
+        document.getElementById('geoSourceInfo').innerText = "Image lacks EXIF GPS tags. Falling back to device coordinates.";
+      });
+    }
+
     async function submitHazard(e) {
       e.preventDefault();
       const btn = document.getElementById('submitBtn');
@@ -202,6 +292,7 @@
         description: document.getElementById('description').value,
         latitude: parseFloat(document.getElementById('lat').value),
         longitude: parseFloat(document.getElementById('lon').value),
+        image_data: uploadedImageBase64, // Optional base64 photo preview
         timestamp: new Date().toISOString()
       };
 

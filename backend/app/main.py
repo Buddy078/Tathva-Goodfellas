@@ -25,12 +25,13 @@ def get_db_connection():
 # --- Pydantic Data Models ---
 class HazardReport(BaseModel):
     title: str
-    category: str  # ROAD, SANITATION, ELECTRICAL, WATER
+    category: str
     description: Optional[str] = ""
     severity: Optional[str] = "MEDIUM"
     latitude: float
     longitude: float
-
+    image_data: Optional[str] = None  # Receives base64 string
+    
 class PublicNoticeCreate(BaseModel):
     title: str
     category: str
@@ -121,13 +122,13 @@ def report_hazard(report: HazardReport):
         sla_deadline = datetime.utcnow() + timedelta(hours=sla_hours)
 
         insert_query = """
-            INSERT INTO hazards (title, category, severity, status, description, upvotes, geom, sla_deadline)
-            VALUES (%s, %s, %s, 'PENDING_TRIAGE', %s, 1, ST_SetSRID(ST_MakePoint(%s, %s), 4326), %s)
+            INSERT INTO hazards (title, category, severity, status, description, upvotes, image_data, geom, sla_deadline)
+            VALUES (%s, %s, %s, 'PENDING_TRIAGE', %s, 1, %s, ST_SetSRID(ST_MakePoint(%s, %s), 4326), %s)
             RETURNING id, title, category, severity, status, upvotes, sla_deadline;
         """
         cur.execute(insert_query, (
             report.title, report.category, report.severity, report.description,
-            report.longitude, report.latitude, sla_deadline
+            report.image_data, report.longitude, report.latitude, sla_deadline
         ))
         new_hazard = cur.fetchone()
         conn.commit()
@@ -147,7 +148,7 @@ def list_hazards():
     cur = conn.cursor()
     try:
         query = """
-            SELECT id, title, category, severity, status, description, upvotes,
+            SELECT id, title, category, severity, status, description, upvotes, image_data,
                    ST_Y(geom) as latitude, ST_X(geom) as longitude,
                    created_at, sla_deadline
             FROM hazards
