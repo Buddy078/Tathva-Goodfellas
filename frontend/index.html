@@ -10,8 +10,6 @@
 <body class="bg-slate-100 flex justify-center min-h-screen text-slate-800">
 
   <div class="w-full max-w-md bg-white min-h-screen flex flex-col shadow-xl border-x border-slate-200 pb-16">
-    
-    <!-- Top Header -->
     <header class="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-900 text-white">
       <div>
         <h1 class="text-lg font-bold tracking-tight">CivicPulse</h1>
@@ -19,26 +17,23 @@
       </div>
       <div class="flex items-center space-x-3">
         <span id="citizenName" class="text-xs text-slate-300 font-medium">Citizen</span>
-        <a href="login.html" onclick="localStorage.removeItem('cp_user')" class="text-xs text-red-400 hover:text-red-300 underline transition">
-          Exit
-        </a>
+        <a href="login.html" onclick="logout()" class="text-xs text-red-400 hover:text-red-300 underline transition">Exit</a>
       </div>
     </header>
 
-    <!-- Navigation Tabs -->
     <div class="flex border-b border-slate-200 bg-slate-50 text-sm font-semibold">
-      <button id="tabNoticesBtn" onclick="switchTab('notices')" class="flex-1 py-3 text-center border-b-2 border-blue-600 text-blue-600 bg-white transition">
+      <button id="tabNoticesBtn" onclick="switchTab('notices')"
+        class="flex-1 py-3 text-center border-b-2 border-blue-600 text-blue-600 bg-white transition">
         🏛️ Governance
       </button>
-      <button id="tabReportBtn" onclick="switchTab('report')" class="flex-1 py-3 text-center border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition">
+      <button id="tabReportBtn" onclick="switchTab('report')"
+        class="flex-1 py-3 text-center border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition">
         ⚠️ Report Hazard
       </button>
     </div>
 
-    <!-- Feedback Notification Toast -->
     <div id="statusToast" class="hidden m-3 p-3 rounded-lg text-xs font-medium border"></div>
 
-    <!-- TAB 1: GOVERNANCE FEED -->
     <main id="noticesTab" class="p-4 space-y-4 flex-1">
       <div class="flex justify-between items-center">
         <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500">Public Advisories</h2>
@@ -49,27 +44,23 @@
       </div>
     </main>
 
-    <!-- TAB 2: REPORT HAZARD FORM -->
-<!-- TAB 2: REPORT HAZARD FORM -->
     <main id="reportTab" class="p-4 space-y-4 flex-1 hidden">
       <h2 class="text-sm font-bold text-slate-800">Report an Urban Hazard</h2>
       <p class="text-xs text-slate-500">Auto-routes to ward teams and deduplicates nearby reports.</p>
 
       <form id="hazardForm" onsubmit="submitHazard(event)" class="space-y-3 text-xs">
-        
-        <!-- PHOTO UPLOAD & EXIF GPS AUTO-EXTRACT -->
         <div>
           <label class="block font-semibold mb-1 text-slate-700">Hazard Photo Proof</label>
           <div class="border-2 border-dashed border-slate-300 hover:border-blue-500 rounded-lg p-3 text-center transition cursor-pointer relative bg-slate-50">
-            <input type="file" id="hazardPhoto" accept="image/*" onchange="handlePhotoUpload(event)" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10">
+            <input type="file" id="hazardPhoto" accept="image/*" onchange="handlePhotoUpload(event)"
+              class="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10">
             <div id="uploadPrompt" class="space-y-1">
               <span class="text-2xl">📸</span>
               <p class="font-semibold text-slate-700">Upload or Snap Photo</p>
               <p class="text-[10px] text-slate-400">Extracts GPS coordinates automatically from camera metadata</p>
             </div>
-            <!-- Image Preview Box -->
             <div id="imagePreviewBox" class="hidden flex items-center gap-3">
-              <img id="imagePreview" class="h-16 w-16 object-cover rounded border border-slate-300" src="" alt="Proof Preview" />
+              <img id="imagePreview" class="h-16 w-16 object-cover rounded border border-slate-300" src="" alt="Proof preview">
               <div class="text-left">
                 <p id="imageFilename" class="font-semibold text-slate-800 truncate max-w-[180px]"></p>
                 <p id="exifStatus" class="text-[10px] font-medium text-emerald-600">Extracting EXIF...</p>
@@ -80,7 +71,8 @@
 
         <div>
           <label class="block font-semibold mb-1 text-slate-700">Issue Title</label>
-          <input type="text" id="title" required placeholder="e.g. Open Stormwater Drain" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+          <input type="text" id="title" required placeholder="e.g. Open Stormwater Drain"
+            class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
         </div>
 
         <div>
@@ -104,91 +96,139 @@
 
         <div>
           <label class="block font-semibold mb-1 text-slate-700">Description</label>
-          <textarea id="description" rows="2" placeholder="Provide extra landmark details..." class="w-full p-2.5 border rounded-lg outline-none"></textarea>
+          <textarea id="description" rows="2" placeholder="Provide extra landmark details..."
+            class="w-full p-2.5 border rounded-lg outline-none"></textarea>
         </div>
 
-        <!-- Coordinates Box -->
         <div class="p-3 bg-slate-50 border rounded-lg space-y-2">
           <div class="flex justify-between items-center">
             <span class="font-semibold text-slate-700">Detected GPS Location</span>
-            <button type="button" onclick="detectGPS()" class="text-[11px] text-blue-600 font-semibold hover:underline">📍 Use Live Device GPS</button>
+            <button type="button" onclick="detectGPS()" class="text-[11px] text-blue-600 font-semibold hover:underline">
+              📍 Use Live Device GPS
+            </button>
           </div>
+
           <div class="grid grid-cols-2 gap-2">
             <div>
               <label class="text-[10px] text-slate-500">Latitude</label>
-              <input type="number" step="any" id="lat" required placeholder="Latitude" value="11.0168" class="w-full p-1.5 border rounded bg-white">
+              <input type="number" step="any" id="lat" required value="11.0168"
+                class="w-full p-1.5 border rounded bg-white">
             </div>
             <div>
               <label class="text-[10px] text-slate-500">Longitude</label>
-              <input type="number" step="any" id="lon" required placeholder="Longitude" value="76.9558" class="w-full p-1.5 border rounded bg-white">
+              <input type="number" step="any" id="lon" required value="76.9558"
+                class="w-full p-1.5 border rounded bg-white">
             </div>
           </div>
-          <p id="geoSourceInfo" class="text-[10px] text-slate-400 leading-tight">Default pre-set. Uploading a geotagged photo will auto-populate these values.</p>
+
+          <p id="geoSourceInfo" class="text-[10px] text-slate-400 leading-tight">
+            Default pre-set. Uploading a geotagged photo will auto-populate these values.
+          </p>
         </div>
 
-        <button type="submit" id="submitBtn" class="w-full py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition shadow-md">
+        <button type="submit" id="submitBtn"
+          class="w-full py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition shadow-md disabled:opacity-60">
           Submit Work Order
         </button>
       </form>
     </main>
-
   </div>
 
   <script>
     const API_BASE = "http://localhost:8000";
+    const session = JSON.parse(localStorage.getItem("cp_user") || "{}");
 
-    // Setup active session details
-    const session = JSON.parse(localStorage.getItem('cp_user') || '{}');
-    if (session.name) {
-      document.getElementById('citizenName').innerText = session.name;
+    function logout() {
+      localStorage.removeItem("cp_user");
+    }
+
+    function redirectToLogin(message = "Please sign in to continue.") {
+      localStorage.removeItem("cp_user");
+      window.location.href = `login.html?message=${encodeURIComponent(message)}`;
+    }
+
+    if (!session.token || session.role !== "citizen") {
+      redirectToLogin("Citizen login is required.");
+    }
+
+    document.getElementById("citizenName").innerText = session.name || "Citizen";
+
+    function authHeaders() {
+      return {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${session.token}`
+      };
+    }
+
+    async function parseResponse(response) {
+      let data = {};
+      try {
+        data = await response.json();
+      } catch (_) {}
+
+      if (response.status === 401) {
+        redirectToLogin("Your session expired. Please log in again.");
+        throw new Error("Session expired");
+      }
+
+      if (!response.ok) {
+        throw new Error(data.detail || "Request failed");
+      }
+
+      return data;
     }
 
     function switchTab(tab) {
-      const isNotices = tab === 'notices';
-      document.getElementById('noticesTab').classList.toggle('hidden', !isNotices);
-      document.getElementById('reportTab').classList.toggle('hidden', isNotices);
-      
-      document.getElementById('tabNoticesBtn').className = isNotices 
+      const isNotices = tab === "notices";
+
+      document.getElementById("noticesTab").classList.toggle("hidden", !isNotices);
+      document.getElementById("reportTab").classList.toggle("hidden", isNotices);
+
+      document.getElementById("tabNoticesBtn").className = isNotices
         ? "flex-1 py-3 text-center border-b-2 border-blue-600 text-blue-600 bg-white transition font-semibold"
         : "flex-1 py-3 text-center border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition font-semibold";
-      
-      document.getElementById('tabReportBtn').className = !isNotices 
+
+      document.getElementById("tabReportBtn").className = !isNotices
         ? "flex-1 py-3 text-center border-b-2 border-blue-600 text-blue-600 bg-white transition font-semibold"
         : "flex-1 py-3 text-center border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition font-semibold";
-      
+
       if (isNotices) loadNotices();
     }
 
     function showToast(message, isSuccess = true, isMerge = false) {
-      const toast = document.getElementById('statusToast');
+      const toast = document.getElementById("statusToast");
       toast.className = `m-3 p-3 rounded-lg text-xs font-medium border ${
-        isMerge ? 'bg-amber-50 border-amber-300 text-amber-900' :
-        isSuccess ? 'bg-emerald-50 border-emerald-300 text-emerald-900' :
-        'bg-red-50 border-red-300 text-red-900'
+        isMerge ? "bg-amber-50 border-amber-300 text-amber-900" :
+        isSuccess ? "bg-emerald-50 border-emerald-300 text-emerald-900" :
+        "bg-red-50 border-red-300 text-red-900"
       }`;
       toast.innerHTML = message;
-      toast.classList.remove('hidden');
-      setTimeout(() => toast.classList.add('hidden'), 6000);
+      toast.classList.remove("hidden");
+      setTimeout(() => toast.classList.add("hidden"), 6000);
     }
 
     function detectGPS() {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          pos => {
-            document.getElementById('lat').value = pos.coords.latitude.toFixed(6);
-            document.getElementById('lon').value = pos.coords.longitude.toFixed(6);
-            showToast("📍 Acquired precise device GPS coordinates.", true);
-          },
-          err => showToast("Could not retrieve GPS: " + err.message, false)
-        );
+      if (!navigator.geolocation) {
+        showToast("This browser does not support device GPS.", false);
+        return;
       }
+
+      navigator.geolocation.getCurrentPosition(
+        position => {
+          document.getElementById("lat").value = position.coords.latitude.toFixed(6);
+          document.getElementById("lon").value = position.coords.longitude.toFixed(6);
+          showToast("📍 Acquired precise device GPS coordinates.", true);
+        },
+        error => showToast(`Could not retrieve GPS: ${error.message}`, false)
+      );
     }
 
     async function loadNotices() {
+      const container = document.getElementById("noticesList");
+
       try {
-        const res = await fetch(`${API_BASE}/api/v1/notices`);
-        const data = await res.json();
-        const container = document.getElementById('noticesList');
+        const response = await fetch(`${API_BASE}/api/v1/notices`);
+        const data = await parseResponse(response);
         container.innerHTML = "";
 
         if (!data.notices || data.notices.length === 0) {
@@ -196,159 +236,190 @@
           return;
         }
 
-        data.notices.forEach(n => {
-          const card = document.createElement('article');
-          card.className = `p-3.5 border rounded-lg shadow-sm transition ${n.is_critical ? 'bg-red-50/50 border-red-300' : 'bg-white border-slate-200'}`;
+        data.notices.forEach(notice => {
+          const card = document.createElement("article");
+          card.className = `p-3.5 border rounded-lg shadow-sm transition ${
+            notice.is_critical ? "bg-red-50/50 border-red-300" : "bg-white border-slate-200"
+          }`;
+
           card.innerHTML = `
             <div class="flex justify-between items-start mb-1">
-              <span class="px-2 py-0.5 rounded text-[10px] font-bold ${n.is_critical ? 'bg-red-600 text-white' : 'bg-slate-100 text-slate-700'}">
-                ${n.category}
-              </span>
-              <span class="text-[10px] text-slate-400">${new Date(n.start_time).toLocaleDateString()}</span>
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold ${
+                notice.is_critical ? "bg-red-600 text-white" : "bg-slate-100 text-slate-700"
+              }">${notice.category}</span>
+              <span class="text-[10px] text-slate-400">${new Date(notice.start_time).toLocaleDateString()}</span>
             </div>
-            <h3 class="text-xs font-bold text-slate-900">${n.title}</h3>
-            <p class="text-[11px] text-slate-600 mt-1">${n.description}</p>
-            <div class="mt-2 text-[10px] font-medium text-slate-500 flex items-center gap-1">
-              <span>📍 ${n.affected_areas}</span> • <span>🏢 ${n.department}</span>
-            </div>
+            <h3 class="text-xs font-bold text-slate-900"></h3>
+            <p class="text-[11px] text-slate-600 mt-1"></p>
+            <div class="mt-2 text-[10px] font-medium text-slate-500 flex items-center gap-1"></div>
           `;
+
+          card.querySelector("h3").textContent = notice.title;
+          card.querySelector("p").textContent = notice.description;
+          card.querySelector(".mt-2").textContent = `📍 ${notice.affected_areas} • 🏢 ${notice.department}`;
           container.appendChild(card);
         });
-      } catch (e) {
-        showToast("Error connecting to backend API.", false);
+      } catch (error) {
+        if (error.message !== "Session expired") {
+          showToast(`Error connecting to backend API: ${error.message}`, false);
+        }
       }
     }
 
     let uploadedImageBase64 = null;
 
-    // Helper: Convert EXIF DMS (Degrees, Minutes, Seconds) array to Decimal Degrees
     function convertDMSToDD(dms, ref) {
       if (!dms || dms.length < 3) return null;
-      let dd = dms[0] + (dms[1] / 60) + (dms[2] / 3600);
-      if (ref === "S" || ref === "W") {
-        dd = dd * -1;
-      }
-      return dd;
+
+      let decimal = dms[0] + (dms[1] / 60) + (dms[2] / 3600);
+      if (ref === "S" || ref === "W") decimal *= -1;
+      return decimal;
     }
 
     function handlePhotoUpload(event) {
       const file = event.target.files[0];
       if (!file) return;
 
-      // Show preview
-      document.getElementById('uploadPrompt').classList.add('hidden');
-      const previewBox = document.getElementById('imagePreviewBox');
-      previewBox.classList.remove('hidden');
-      document.getElementById('imageFilename').innerText = file.name;
-      const statusText = document.getElementById('exifStatus');
+      document.getElementById("uploadPrompt").classList.add("hidden");
+      document.getElementById("imagePreviewBox").classList.remove("hidden");
+      document.getElementById("imageFilename").innerText = file.name;
+
+      const statusText = document.getElementById("exifStatus");
       statusText.innerText = "Scanning EXIF metadata...";
 
       const reader = new FileReader();
-      reader.onload = function(e) {
-        uploadedImageBase64 = e.target.result;
-        document.getElementById('imagePreview').src = uploadedImageBase64;
+      reader.onload = event => {
+        uploadedImageBase64 = event.target.result;
+        document.getElementById("imagePreview").src = uploadedImageBase64;
       };
       reader.readAsDataURL(file);
 
-      // Extract EXIF GPS Metadata using EXIF.js
-      EXIF.getData(file, function() {
+      EXIF.getData(file, function () {
         const latData = EXIF.getTag(this, "GPSLatitude");
         const latRef = EXIF.getTag(this, "GPSLatitudeRef");
         const lonData = EXIF.getTag(this, "GPSLongitude");
         const lonRef = EXIF.getTag(this, "GPSLongitudeRef");
 
         if (latData && lonData && latRef && lonRef) {
-          const lat = convertDMSToDD(latData, latRef);
-          const lon = convertDMSToDD(lonData, lonRef);
+          const latitude = convertDMSToDD(latData, latRef);
+          const longitude = convertDMSToDD(lonData, lonRef);
 
-          if (lat !== null && lon !== null) {
-            document.getElementById('lat').value = lat.toFixed(6);
-            document.getElementById('lon').value = lon.toFixed(6);
+          if (latitude !== null && longitude !== null) {
+            document.getElementById("lat").value = latitude.toFixed(6);
+            document.getElementById("lon").value = longitude.toFixed(6);
             statusText.innerText = "📍 GPS auto-extracted from photo!";
             statusText.className = "text-[10px] font-bold text-emerald-600";
-            document.getElementById('geoSourceInfo').innerHTML = `<span class="text-emerald-600 font-semibold">✓ Auto-filled from image metadata: (${lat.toFixed(4)}, ${lon.toFixed(4)})</span>`;
-            showToast("📸 <strong>GPS Extracted:</strong> Coordinates populated directly from photo EXIF metadata!", true);
+            document.getElementById("geoSourceInfo").innerHTML =
+              `<span class="text-emerald-600 font-semibold">✓ Auto-filled from image metadata: (${latitude.toFixed(4)}, ${longitude.toFixed(4)})</span>`;
+            showToast("📸 <strong>GPS Extracted:</strong> Coordinates populated from photo metadata.", true);
             return;
           }
         }
-        
-        // Fallback if image has no location header
+
         statusText.innerText = "No EXIF coordinates found. Using device/manual GPS.";
         statusText.className = "text-[10px] font-medium text-amber-600";
-        document.getElementById('geoSourceInfo').innerText = "Image lacks EXIF GPS tags. Falling back to device coordinates.";
+        document.getElementById("geoSourceInfo").innerText =
+          "Image lacks EXIF GPS tags. Falling back to device coordinates.";
       });
     }
 
-    async function submitHazard(e) {
-      e.preventDefault();
-      const btn = document.getElementById('submitBtn');
-      btn.innerText = "Processing...";
-      btn.disabled = true;
+    function resetHazardForm() {
+      document.getElementById("hazardForm").reset();
+      document.getElementById("lat").value = "11.0168";
+      document.getElementById("lon").value = "76.9558";
+      uploadedImageBase64 = null;
+
+      document.getElementById("uploadPrompt").classList.remove("hidden");
+      document.getElementById("imagePreviewBox").classList.add("hidden");
+      document.getElementById("imagePreview").src = "";
+      document.getElementById("geoSourceInfo").innerText =
+        "Default pre-set. Uploading a geotagged photo will auto-populate these values.";
+    }
+
+    async function sendHazard(payload) {
+      const response = await fetch(`${API_BASE}/api/v1/hazards`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify(payload)
+      });
+
+      return parseResponse(response);
+    }
+
+    async function submitHazard(event) {
+      event.preventDefault();
+
+      const button = document.getElementById("submitBtn");
+      button.innerText = "Processing...";
+      button.disabled = true;
 
       const payload = {
-        title: document.getElementById('title').value,
-        category: document.getElementById('category').value,
-        severity: document.getElementById('severity').value,
-        description: document.getElementById('description').value,
-        latitude: parseFloat(document.getElementById('lat').value),
-        longitude: parseFloat(document.getElementById('lon').value),
-        image_data: uploadedImageBase64, // Optional base64 photo preview
-        timestamp: new Date().toISOString()
+        title: document.getElementById("title").value.trim(),
+        category: document.getElementById("category").value,
+        severity: document.getElementById("severity").value,
+        description: document.getElementById("description").value.trim(),
+        latitude: Number.parseFloat(document.getElementById("lat").value),
+        longitude: Number.parseFloat(document.getElementById("lon").value),
+        image_data: uploadedImageBase64
       };
 
       try {
-        const res = await fetch(`${API_BASE}/api/v1/hazards`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        });
-        const result = await res.json();
+        const result = await sendHazard(payload);
 
         if (result.action === "DEDUPLICATED_AND_MERGED") {
           showToast(`⚡ <strong>Spatial Match Found!</strong> ${result.message}`, true, true);
         } else {
-          showToast(`✅ <strong>Success:</strong> Ticket #${result.data.id} created with SLA priority.`, true, false);
+          showToast(`✅ <strong>Success:</strong> Ticket #${result.data.id} created with SLA priority.`, true);
         }
-      } catch (err) {
-        // Offline Store-and-Forward caching in localStorage
-        let pending = JSON.parse(localStorage.getItem('pending_hazards') || '[]');
-        pending.push(payload);
-        localStorage.setItem('pending_hazards', JSON.stringify(pending));
-        showToast("📶 <strong>Stored Offline:</strong> No connection detected. Coordinates cached locally and will auto-sync when online.", true, true);
+
+        resetHazardForm();
+      } catch (error) {
+        if (error.message === "Session expired") return;
+
+        if (!navigator.onLine || error instanceof TypeError) {
+          const pending = JSON.parse(localStorage.getItem("pending_hazards") || "[]");
+          pending.push(payload);
+          localStorage.setItem("pending_hazards", JSON.stringify(pending));
+          showToast("📶 <strong>Stored Offline:</strong> Report cached and will sync when online.", true, true);
+          resetHazardForm();
+        } else {
+          showToast(`Unable to submit report: ${error.message}`, false);
+        }
       } finally {
-        document.getElementById('hazardForm').reset();
-        document.getElementById('lat').value = "11.0168";
-        document.getElementById('lon').value = "76.9558";
-        btn.innerText = "Submit Work Order";
-        btn.disabled = false;
+        button.innerText = "Submit Work Order";
+        button.disabled = false;
       }
     }
 
-    // Auto-sync pending reports when network connection restores
-    window.addEventListener('online', async () => {
-      let pending = JSON.parse(localStorage.getItem('pending_hazards') || '[]');
+    async function syncPendingHazards() {
+      const pending = JSON.parse(localStorage.getItem("pending_hazards") || "[]");
       if (pending.length === 0) return;
 
       showToast(`🔄 Connection restored. Syncing ${pending.length} cached report(s)...`, true);
-      while (pending.length > 0) {
-        const item = pending.shift();
+
+      const remaining = [];
+      for (const item of pending) {
         try {
-          await fetch(`${API_BASE}/api/v1/hazards`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(item)
-          });
-          localStorage.setItem('pending_hazards', JSON.stringify(pending));
-        } catch (e) {
-          pending.unshift(item);
-          break;
+          await sendHazard(item);
+        } catch (error) {
+          if (error.message === "Session expired") return;
+          remaining.push(item);
         }
       }
-      showToast("✅ All offline reports synchronized successfully!", true);
-    });
 
-    // Initial load
+      localStorage.setItem("pending_hazards", JSON.stringify(remaining));
+
+      if (remaining.length === 0) {
+        showToast("✅ All offline reports synchronized successfully!", true);
+      } else {
+        showToast(`${remaining.length} report(s) could not yet be synchronized.`, false);
+      }
+    }
+
+    window.addEventListener("online", syncPendingHazards);
+
     loadNotices();
+    if (navigator.onLine) syncPendingHazards();
   </script>
 </body>
 </html>

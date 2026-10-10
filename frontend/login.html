@@ -9,8 +9,6 @@
 <body class="bg-slate-900 text-slate-100 flex items-center justify-center min-h-screen p-4 font-sans">
 
   <div class="w-full max-w-md bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl p-6 sm:p-8 space-y-6">
-    
-    <!-- Branding -->
     <div class="text-center space-y-1">
       <div class="inline-flex items-center space-x-2 text-2xl font-black tracking-wider text-blue-400">
         <span>CIVICPULSE</span>
@@ -18,129 +16,131 @@
       <p class="text-xs text-slate-400">Unified Municipal & Citizen Engagement Platform</p>
     </div>
 
-    <!-- Role Switcher -->
     <div class="grid grid-cols-2 p-1 bg-slate-900/80 rounded-xl border border-slate-700 text-xs font-bold">
-      <button id="roleCitizenBtn" onclick="setRole('citizen')" class="py-2.5 rounded-lg bg-blue-600 text-white transition">
+      <button id="roleCitizenBtn" type="button" onclick="setRole('citizen')" class="py-2.5 rounded-lg bg-blue-600 text-white transition">
         👤 Citizen Access
       </button>
-      <button id="roleAdminBtn" onclick="setRole('admin')" class="py-2.5 rounded-lg text-slate-400 hover:text-white transition">
+      <button id="roleAdminBtn" type="button" onclick="setRole('admin')" class="py-2.5 rounded-lg text-slate-400 hover:text-white transition">
         🏛️ Municipal Officer
       </button>
     </div>
 
-    <!-- Error/Alert Banner -->
     <div id="errorBanner" class="hidden p-3 bg-red-500/20 border border-red-500/40 text-red-300 text-xs rounded-lg font-medium"></div>
 
-    <!-- Form -->
     <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4 text-xs">
       <div>
-        <label id="userLabel" class="block font-semibold mb-1 text-slate-300">Citizen Mobile or Email</label>
-        <input type="text" id="username" required class="w-full p-3 rounded-lg bg-slate-900 border border-slate-600 text-white outline-none focus:border-blue-500">
+        <label id="userLabel" class="block font-semibold mb-1 text-slate-300">Citizen Email</label>
+        <input type="email" id="username" required autocomplete="username"
+          class="w-full p-3 rounded-lg bg-slate-900 border border-slate-600 text-white outline-none focus:border-blue-500">
       </div>
 
       <div>
         <label class="block font-semibold mb-1 text-slate-300">Password</label>
-        <input type="password" id="password" required class="w-full p-3 rounded-lg bg-slate-900 border border-slate-600 text-white outline-none focus:border-blue-500">
+        <input type="password" id="password" required autocomplete="current-password"
+          class="w-full p-3 rounded-lg bg-slate-900 border border-slate-600 text-white outline-none focus:border-blue-500">
       </div>
 
-      <button type="submit" id="submitBtn" class="w-full py-3 bg-blue-600 hover:bg-blue-500 font-bold text-white rounded-lg transition shadow-md">
+      <button type="submit" id="submitBtn"
+        class="w-full py-3 bg-blue-600 hover:bg-blue-500 font-bold text-white rounded-lg transition shadow-md disabled:opacity-60">
         Enter CivicPulse Portal
       </button>
     </form>
 
-    <!-- Hackathon Quick-Autofill Helpers -->
     <div class="border-t border-slate-700/80 pt-4 space-y-2">
       <p class="text-[11px] font-semibold text-slate-400 text-center">⚡ Pitch Evaluation Demo Presets</p>
       <div class="grid grid-cols-2 gap-2 text-[11px]">
-        <button type="button" onclick="autofillCitizen()" class="py-2 px-2 bg-slate-700/60 hover:bg-slate-700 border border-slate-600 rounded text-slate-300 transition text-center">
+        <button type="button" onclick="autofillCitizen()"
+          class="py-2 px-2 bg-slate-700/60 hover:bg-slate-700 border border-slate-600 rounded text-slate-300 transition text-center">
           Autofill Citizen
         </button>
-        <button type="button" onclick="autofillAdmin()" class="py-2 px-2 bg-slate-700/60 hover:bg-slate-700 border border-slate-600 rounded text-slate-300 transition text-center">
+        <button type="button" onclick="autofillAdmin()"
+          class="py-2 px-2 bg-slate-700/60 hover:bg-slate-700 border border-slate-600 rounded text-slate-300 transition text-center">
           Autofill Officer
         </button>
       </div>
     </div>
-
   </div>
 
   <script>
     const API_BASE = "http://localhost:8000";
-    let activeRole = 'citizen';
+    let activeRole = "citizen";
 
     function setRole(role) {
       activeRole = role;
-      const citizenBtn = document.getElementById('roleCitizenBtn');
-      const adminBtn = document.getElementById('roleAdminBtn');
-      const userLabel = document.getElementById('userLabel');
 
-      if (role === 'citizen') {
+      const citizenBtn = document.getElementById("roleCitizenBtn");
+      const adminBtn = document.getElementById("roleAdminBtn");
+      const userLabel = document.getElementById("userLabel");
+
+      if (role === "citizen") {
         citizenBtn.className = "py-2.5 rounded-lg bg-blue-600 text-white font-bold transition";
         adminBtn.className = "py-2.5 rounded-lg text-slate-400 hover:text-white font-bold transition";
-        userLabel.innerText = "Citizen Mobile or Email";
+        userLabel.innerText = "Citizen Email";
       } else {
         adminBtn.className = "py-2.5 rounded-lg bg-blue-600 text-white font-bold transition";
         citizenBtn.className = "py-2.5 rounded-lg text-slate-400 hover:text-white font-bold transition";
-        userLabel.innerText = "Government Official ID / Email";
+        userLabel.innerText = "Government Official Email";
       }
+
       hideError();
     }
 
-    function showError(msg) {
-      const banner = document.getElementById('errorBanner');
-      banner.innerText = msg;
-      banner.classList.remove('hidden');
+    function showError(message) {
+      const banner = document.getElementById("errorBanner");
+      banner.innerText = message;
+      banner.classList.remove("hidden");
     }
 
     function hideError() {
-      document.getElementById('errorBanner').classList.add('hidden');
+      document.getElementById("errorBanner").classList.add("hidden");
     }
 
     function autofillCitizen() {
-      setRole('citizen');
-      document.getElementById('username').value = "citizen@ward7.in";
-      document.getElementById('password').value = "citizen123";
+      setRole("citizen");
+      document.getElementById("username").value = "citizen@civicpulse.in";
+      document.getElementById("password").value = "citizen123";
     }
 
     function autofillAdmin() {
-      setRole('admin');
-      document.getElementById('username').value = "admin@coimbatore.gov.in";
-      document.getElementById('password').value = "admin123";
+      setRole("admin");
+      document.getElementById("username").value = "admin@coimbatore.gov.in";
+      document.getElementById("password").value = "admin123";
     }
 
-    async function handleLogin(e) {
-      e.preventDefault();
+    async function handleLogin(event) {
+      event.preventDefault();
       hideError();
-      const btn = document.getElementById('submitBtn');
-      btn.innerText = "Authenticating...";
-      btn.disabled = true;
+
+      const button = document.getElementById("submitBtn");
+      button.innerText = "Authenticating...";
+      button.disabled = true;
 
       const payload = {
-        username: document.getElementById('username').value.trim(),
-        password: document.getElementById('password').value,
+        username: document.getElementById("username").value.trim(),
+        password: document.getElementById("password").value,
         role: activeRole
       };
 
       try {
-        const res = await fetch(`${API_BASE}/api/v1/auth/login`, {
+        const response = await fetch(`${API_BASE}/api/v1/auth/login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
         });
 
-        const data = await res.json();
-        if (!res.ok) {
+        const data = await response.json();
+
+        if (!response.ok || !data.token) {
           throw new Error(data.detail || "Authentication failed");
         }
 
-        // Save session credentials in localStorage
         localStorage.setItem("cp_user", JSON.stringify(data));
         window.location.href = data.redirect;
-
-      } catch (err) {
-        showError(err.message);
+      } catch (error) {
+        showError(error.message || "Unable to reach the CivicPulse backend.");
       } finally {
-        btn.innerText = "Enter CivicPulse Portal";
-        btn.disabled = false;
+        button.innerText = "Enter CivicPulse Portal";
+        button.disabled = false;
       }
     }
   </script>

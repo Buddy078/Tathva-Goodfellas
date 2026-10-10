@@ -5,8 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CivicPulse - Ward Operations Command Center</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Leaflet CSS & JS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
     #map { height: 420px; border-radius: 0.5rem; }
@@ -16,14 +15,11 @@
       border: 1px solid #334155;
       border-radius: 0.5rem;
     }
-    .custom-popup .leaflet-popup-tip {
-      background: #0f172a;
-    }
+    .custom-popup .leaflet-popup-tip { background: #0f172a; }
   </style>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans">
 
-  <!-- Top Navigation Header -->
   <header class="bg-slate-800 border-b border-slate-700 px-6 py-3.5 flex justify-between items-center shadow-md">
     <div class="flex items-center space-x-3">
       <span class="text-xl font-black tracking-wider text-blue-400">CIVICPULSE</span>
@@ -31,33 +27,28 @@
         MUNICIPAL COMMAND CENTER
       </span>
     </div>
+
     <div class="flex items-center space-x-4 text-xs">
       <span class="text-slate-400">Ward: <strong id="officerWard" class="text-slate-200">Zone 4 (Central)</strong></span>
       <span class="text-slate-400">Officer: <strong id="officerName" class="text-slate-200">Engineer J. Ramanathan</strong></span>
       <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
         ● GIS Feed Active
       </span>
-      <a href="login.html" onclick="localStorage.removeItem('cp_user')" class="bg-slate-700 hover:bg-slate-600 px-2.5 py-1 rounded text-red-300 hover:text-red-200 transition">
+      <a href="login.html" onclick="logout()" class="bg-slate-700 hover:bg-slate-600 px-2.5 py-1 rounded text-red-300 hover:text-red-200 transition">
         Logout
       </a>
     </div>
   </header>
 
-  <!-- Feedback Toast -->
   <div id="toast" class="hidden fixed top-16 right-6 z-50 p-4 rounded-lg shadow-lg text-xs font-semibold"></div>
 
-  <!-- Main Grid Layout -->
   <div class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 p-6">
-    
-    <!-- Left Column: Map & Active Incidents (8 Cols) -->
     <section class="lg:col-span-8 space-y-6 flex flex-col">
-      
-      <!-- Interactive Leaflet GIS Incident Map (ESRI Dark Basemap) -->
       <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-md">
         <div class="flex justify-between items-center mb-3">
           <div>
             <h2 class="text-sm font-bold text-white tracking-wide">Live Spatial Incident GIS Map</h2>
-            <p class="text-xs text-slate-400">Click any ticket below to zoom to its location & inspect photographic proof</p>
+            <p class="text-xs text-slate-400">Click any ticket below to zoom to its location and inspect photographic proof</p>
           </div>
           <button onclick="loadHazards()" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded transition">
             ↻ Sync GIS Coordinates
@@ -66,19 +57,18 @@
         <div id="map" class="z-0 border border-slate-600"></div>
       </div>
 
-      <!-- Priority Triage & SLA Work Order Queue -->
       <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-md flex-1">
         <div class="flex justify-between items-center mb-3">
           <div>
             <h2 class="text-sm font-bold text-white">Priority Triage Work Orders</h2>
-            <p class="text-xs text-slate-400">Click a row to focus map on the incident</p>
+            <p class="text-xs text-slate-400">Click a row to focus the map on an incident</p>
           </div>
           <span id="ticketCountBadge" class="text-xs font-bold bg-slate-700 px-2.5 py-1 rounded text-slate-300">0 Active</span>
         </div>
-        
+
         <div class="overflow-x-auto max-h-72 overflow-y-auto">
           <table class="w-full text-left text-xs text-slate-300">
-            <thead class="bg-slate-700/60 uppercase text-[10px] text-slate-400 border-b border-slate-600 sticky top-0 bg-slate-800">
+            <thead class="bg-slate-700/60 uppercase text-[10px] text-slate-400 border-b border-slate-600 sticky top-0">
               <tr>
                 <th class="p-2.5">ID</th>
                 <th class="p-2.5">Title & Category</th>
@@ -97,10 +87,8 @@
           </table>
         </div>
       </div>
-
     </section>
 
-    <!-- Right Column: Governance Broadcast Dispatcher (4 Cols) -->
     <aside class="lg:col-span-4 bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-md flex flex-col">
       <div class="mb-4">
         <h2 class="text-sm font-bold text-white">Broadcast Public Advisory</h2>
@@ -111,7 +99,8 @@
         <div class="space-y-3">
           <div>
             <label class="block font-semibold mb-1 text-slate-300">Advisory Headline</label>
-            <input type="text" id="nTitle" required placeholder="e.g. 11kV Substation Maintenance Outage" class="w-full p-2.5 rounded bg-slate-900 border border-slate-600 text-white outline-none focus:border-blue-500">
+            <input type="text" id="nTitle" required placeholder="e.g. 11kV Substation Maintenance Outage"
+              class="w-full p-2.5 rounded bg-slate-900 border border-slate-600 text-white outline-none focus:border-blue-500">
           </div>
 
           <div class="grid grid-cols-2 gap-2">
@@ -126,28 +115,33 @@
             </div>
             <div>
               <label class="block font-semibold mb-1 text-slate-300">Department</label>
-              <input type="text" id="nDept" required placeholder="e.g. TANGEDCO" class="w-full p-2.5 rounded bg-slate-900 border border-slate-600 text-white outline-none">
+              <input type="text" id="nDept" required placeholder="e.g. TANGEDCO"
+                class="w-full p-2.5 rounded bg-slate-900 border border-slate-600 text-white outline-none">
             </div>
           </div>
 
           <div>
             <label class="block font-semibold mb-1 text-slate-300">Affected Zones / Wards</label>
-            <input type="text" id="nAreas" required placeholder="e.g. Gandhipuram, 7th Cross, Sector 2" class="w-full p-2.5 rounded bg-slate-900 border border-slate-600 text-white outline-none">
+            <input type="text" id="nAreas" required placeholder="e.g. Gandhipuram, 7th Cross, Sector 2"
+              class="w-full p-2.5 rounded bg-slate-900 border border-slate-600 text-white outline-none">
           </div>
 
           <div>
             <label class="block font-semibold mb-1 text-slate-300">Advisory Details & Guidance</label>
-            <textarea id="nDesc" rows="3" required placeholder="Specify timing, alternative water tankers, or detour routes..." class="w-full p-2.5 rounded bg-slate-900 border border-slate-600 text-white outline-none"></textarea>
+            <textarea id="nDesc" rows="3" required placeholder="Specify timing, alternative water tankers, or detour routes..."
+              class="w-full p-2.5 rounded bg-slate-900 border border-slate-600 text-white outline-none"></textarea>
           </div>
 
           <div class="grid grid-cols-2 gap-2">
             <div>
               <label class="block font-semibold mb-1 text-slate-300">Start Time</label>
-              <input type="datetime-local" id="nStart" required class="w-full p-2 rounded bg-slate-900 border border-slate-600 text-white outline-none">
+              <input type="datetime-local" id="nStart" required
+                class="w-full p-2 rounded bg-slate-900 border border-slate-600 text-white outline-none">
             </div>
             <div>
               <label class="block font-semibold mb-1 text-slate-300">End Time</label>
-              <input type="datetime-local" id="nEnd" required class="w-full p-2 rounded bg-slate-900 border border-slate-600 text-white outline-none">
+              <input type="datetime-local" id="nEnd" required
+                class="w-full p-2 rounded bg-slate-900 border border-slate-600 text-white outline-none">
             </div>
           </div>
 
@@ -157,15 +151,14 @@
           </div>
         </div>
 
-        <button type="submit" id="broadcastBtn" class="w-full py-3 bg-blue-600 hover:bg-blue-500 font-bold text-white rounded-lg transition shadow-md mt-4">
+        <button type="submit" id="broadcastBtn"
+          class="w-full py-3 bg-blue-600 hover:bg-blue-500 font-bold text-white rounded-lg transition shadow-md mt-4 disabled:opacity-60">
           📢 Broadcast to Citizen Feeds
         </button>
       </form>
     </aside>
-
   </div>
 
-  <!-- Lightbox Modal for Photo Inspection -->
   <div id="imageModal" class="hidden fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4" onclick="closeImageModal()">
     <div class="relative max-w-2xl max-h-[90vh] bg-slate-900 border border-slate-700 rounded-xl p-3 shadow-2xl" onclick="event.stopPropagation()">
       <div class="flex justify-between items-center pb-2 border-b border-slate-800">
@@ -173,227 +166,312 @@
         <button onclick="closeImageModal()" class="text-slate-400 hover:text-white text-xl font-bold px-1">&times;</button>
       </div>
       <div class="p-2 flex justify-center">
-        <img id="modalImg" src="" alt="Proof Preview" class="max-h-[70vh] w-auto rounded object-contain" />
+        <img id="modalImg" src="" alt="Proof preview" class="max-h-[70vh] w-auto rounded object-contain">
       </div>
     </div>
   </div>
 
   <script>
     const API_BASE = "http://localhost:8000";
-    let map, markerLayerGroup;
+    const session = JSON.parse(localStorage.getItem("cp_user") || "{}");
+
+    let map;
+    let markerLayerGroup;
     const markersMap = {};
     const hazardImagesMap = {};
 
-    const session = JSON.parse(localStorage.getItem('cp_user') || '{}');
-    if (session.name) document.getElementById('officerName').innerText = session.name;
-    if (session.ward) document.getElementById('officerWard').innerText = session.ward;
+    function logout() {
+      localStorage.removeItem("cp_user");
+    }
+
+    function redirectToLogin(message = "Please sign in to continue.") {
+      localStorage.removeItem("cp_user");
+      window.location.href = `login.html?message=${encodeURIComponent(message)}`;
+    }
+
+    if (!session.token || session.role !== "admin") {
+      redirectToLogin("Municipal officer login is required.");
+    }
+
+    document.getElementById("officerName").innerText = session.name || "Municipal Officer";
+    document.getElementById("officerWard").innerText = session.ward || "Zone 4 (Central)";
+
+    function authHeaders() {
+      return {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${session.token}`
+      };
+    }
+
+    async function parseResponse(response) {
+      let data = {};
+      try {
+        data = await response.json();
+      } catch (_) {}
+
+      if (response.status === 401) {
+        redirectToLogin("Your session expired. Please log in again.");
+        throw new Error("Session expired");
+      }
+
+      if (!response.ok) {
+        throw new Error(data.detail || "Request failed");
+      }
+
+      return data;
+    }
 
     function initMap() {
-      map = L.map('map').setView([11.0168, 76.9558], 14);
-      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
-        attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
-        maxZoom: 16
-      }).addTo(map);
+      map = L.map("map").setView([11.0168, 76.9558], 14);
+
+      L.tileLayer(
+        "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+        {
+          attribution: "Tiles © Esri — Esri, DeLorme, NAVTEQ",
+          maxZoom: 16
+        }
+      ).addTo(map);
 
       markerLayerGroup = L.layerGroup().addTo(map);
     }
 
-    function showToast(msg, isSuccess = true) {
-      const toast = document.getElementById('toast');
+    function showToast(message, isSuccess = true) {
+      const toast = document.getElementById("toast");
       toast.className = `fixed top-16 right-6 z-50 p-4 rounded-lg shadow-lg text-xs font-semibold ${
-        isSuccess ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'
+        isSuccess ? "bg-emerald-600 text-white" : "bg-red-600 text-white"
       }`;
-      toast.innerText = msg;
-      toast.classList.remove('hidden');
-      setTimeout(() => toast.classList.add('hidden'), 4000);
+      toast.innerText = message;
+      toast.classList.remove("hidden");
+      setTimeout(() => toast.classList.add("hidden"), 4000);
+    }
+
+    function escapeHtml(value) {
+      const div = document.createElement("div");
+      div.textContent = value ?? "";
+      return div.innerHTML;
     }
 
     function openImageModal(id) {
-      const imgSrc = hazardImagesMap[id];
-      if (!imgSrc) return;
-      document.getElementById('modalImg').src = imgSrc;
-      document.getElementById('imageModal').classList.remove('hidden');
+      const imageSource = hazardImagesMap[id];
+      if (!imageSource) return;
+
+      document.getElementById("modalImg").src = imageSource;
+      document.getElementById("imageModal").classList.remove("hidden");
     }
 
     function closeImageModal() {
-      document.getElementById('imageModal').classList.add('hidden');
-      document.getElementById('modalImg').src = '';
+      document.getElementById("imageModal").classList.add("hidden");
+      document.getElementById("modalImg").src = "";
     }
 
-    function focusHazard(id, lat, lon) {
-      map.flyTo([lat, lon], 16, { animate: true, duration: 1.2 });
-      if (markersMap[id]) {
-        markersMap[id].openPopup();
-      }
+    function focusHazard(id, latitude, longitude) {
+      map.flyTo([latitude, longitude], 16, { animate: true, duration: 1.2 });
+      if (markersMap[id]) markersMap[id].openPopup();
+    }
+
+    function severityBadgeClass(severity) {
+      if (severity === "CRITICAL") return "bg-red-500/20 text-red-400 border border-red-500/30";
+      if (severity === "HIGH") return "bg-amber-500/20 text-amber-400 border border-amber-500/30";
+      return "bg-blue-500/20 text-blue-400 border border-blue-500/30";
+    }
+
+    function markerColor(severity) {
+      if (severity === "CRITICAL") return "#ef4444";
+      if (severity === "HIGH") return "#f59e0b";
+      return "#3b82f6";
     }
 
     async function loadHazards() {
-      try {
-        const res = await fetch(`${API_BASE}/api/v1/hazards`);
-        const data = await res.json();
-        
-        markerLayerGroup.clearLayers();
-        const tbody = document.getElementById('ticketsTableBody');
-        tbody.innerHTML = "";
-        document.getElementById('ticketCountBadge').innerText = `${data.count} Active`;
+      const tbody = document.getElementById("ticketsTableBody");
 
-        if (!data.hazards || data.hazards.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-500">No active work orders.</td></tr>`;
+      try {
+        const response = await fetch(`${API_BASE}/api/v1/hazards`, {
+          headers: authHeaders()
+        });
+
+        const data = await parseResponse(response);
+        const hazards = Array.isArray(data.hazards) ? data.hazards : [];
+        const activeHazards = hazards.filter(hazard => hazard.status !== "RESOLVED");
+
+        document.getElementById("ticketCountBadge").innerText = `${activeHazards.length} Active`;
+
+        markerLayerGroup.clearLayers();
+        tbody.innerHTML = "";
+
+        if (hazards.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-500">No work orders found.</td></tr>`;
           return;
         }
 
-        data.hazards.forEach(h => {
-          if (h.image_data) {
-            hazardImagesMap[h.id] = h.image_data;
-          }
+        hazards.forEach(hazard => {
+          if (hazard.image_data) hazardImagesMap[hazard.id] = hazard.image_data;
 
-          const markerColor = h.severity === 'CRITICAL' ? '#ef4444' : (h.severity === 'HIGH' ? '#f59e0b' : '#3b82f6');
-          
-          const marker = L.circleMarker([h.latitude, h.longitude], {
-            radius: 8 + Math.min(h.upvotes, 10),
-            fillColor: markerColor,
-            color: '#ffffff',
+          const color = markerColor(hazard.severity);
+          const marker = L.circleMarker([hazard.latitude, hazard.longitude], {
+            radius: 8 + Math.min(hazard.upvotes || 0, 10),
+            fillColor: color,
+            color: "#ffffff",
             weight: 2,
             opacity: 1,
             fillOpacity: 0.85
           });
 
-          const imageHtml = h.image_data 
+          const photoHtml = hazard.image_data
             ? `<div class="mt-2 border border-slate-700 rounded overflow-hidden">
-                 <img src="${h.image_data}" alt="Proof" class="w-full h-32 object-cover cursor-pointer hover:opacity-90" onclick="openImageModal('${h.id}')" />
-                 <span class="block text-[9px] text-center text-slate-400 py-0.5 bg-slate-900 cursor-pointer" onclick="openImageModal('${h.id}')">Click photo to enlarge</span>
+                 <img src="${hazard.image_data}" alt="Proof" class="w-full h-32 object-cover cursor-pointer hover:opacity-90" onclick="openImageModal('${hazard.id}')">
+                 <span class="block text-[9px] text-center text-slate-400 py-0.5 bg-slate-900 cursor-pointer" onclick="openImageModal('${hazard.id}')">
+                   Click photo to enlarge
+                 </span>
                </div>`
-            : `<div class="mt-2 text-[10px] italic text-slate-400 bg-slate-800/80 p-2 rounded text-center">No photo submitted with report</div>`;
+            : `<div class="mt-2 text-[10px] italic text-slate-400 bg-slate-800/80 p-2 rounded text-center">No photo submitted</div>`;
 
           marker.bindPopup(`
             <div class="text-slate-100 text-xs font-sans max-w-[220px]">
-              <strong class="text-sm text-white">${h.title}</strong><br/>
-              <span class="font-semibold text-slate-400">[${h.category}]</span><br/>
-              <span class="text-[11px] text-slate-300 mt-1 block">${h.description || 'No additional details.'}</span>
+              <strong class="text-sm text-white">${escapeHtml(hazard.title)}</strong><br>
+              <span class="font-semibold text-slate-400">[${escapeHtml(hazard.category)}]</span><br>
+              <span class="text-[11px] text-slate-300 mt-1 block">${escapeHtml(hazard.description || "No additional details.")}</span>
               <div class="mt-2 pt-1 border-t border-slate-700 flex justify-between items-center text-[11px]">
-                <span>Severity: <strong style="color:${markerColor}">${h.severity}</strong></span>
-                <span class="text-amber-400 font-bold">🔥 ${h.upvotes} Votes</span>
+                <span>Severity: <strong style="color:${color}">${escapeHtml(hazard.severity)}</strong></span>
+                <span class="text-amber-400 font-bold">🔥 ${hazard.upvotes || 0} Votes</span>
               </div>
-              <div class="text-[10px] text-slate-400 mt-0.5">Status: <strong class="text-slate-200">${h.status}</strong></div>
-              ${imageHtml}
+              <div class="text-[10px] text-slate-400 mt-0.5">Status: <strong class="text-slate-200">${escapeHtml(hazard.status)}</strong></div>
+              <div class="text-[10px] text-slate-400 mt-0.5">Assigned: <strong class="text-slate-200">${escapeHtml(hazard.assigned_to || "Unassigned")}</strong></div>
+              ${hazard.is_overdue ? '<div class="mt-1 text-[10px] font-bold text-red-400">⚠ SLA OVERDUE</div>' : ""}
+              ${photoHtml}
             </div>
-          `, { className: 'custom-popup' });
+          `, { className: "custom-popup" });
 
           markerLayerGroup.addLayer(marker);
-          markersMap[h.id] = marker;
+          markersMap[hazard.id] = marker;
 
-          const tr = document.createElement('tr');
-          tr.className = "hover:bg-slate-700/60 cursor-pointer transition select-none";
-          tr.onclick = (e) => {
-            if (e.target.tagName !== 'SELECT') {
-              focusHazard(h.id, h.latitude, h.longitude);
+          const row = document.createElement("tr");
+          row.className = `hover:bg-slate-700/60 cursor-pointer transition select-none ${
+            hazard.is_overdue ? "bg-red-950/20" : ""
+          }`;
+
+          row.onclick = event => {
+            if (event.target.tagName !== "SELECT") {
+              focusHazard(hazard.id, hazard.latitude, hazard.longitude);
             }
           };
 
-          tr.innerHTML = `
-            <td class="p-2.5 font-mono text-slate-400">#${h.id}</td>
+          const slaDate = new Date(hazard.sla_deadline);
+          const slaText = `${slaDate.toLocaleDateString([], { month: "short", day: "numeric" })} ${slaDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+
+          row.innerHTML = `
+            <td class="p-2.5 font-mono text-slate-400">#${hazard.id}</td>
             <td class="p-2.5">
-              <div class="font-semibold text-white hover:text-blue-400 transition">${h.title}</div>
-              <div class="text-[10px] text-slate-400">${h.category}</div>
+              <div class="font-semibold text-white hover:text-blue-400 transition">${escapeHtml(hazard.title)}</div>
+              <div class="text-[10px] text-slate-400">${escapeHtml(hazard.category)}</div>
+              <div class="text-[10px] ${hazard.assigned_to ? "text-emerald-400" : "text-slate-500"}">
+                ${hazard.assigned_to ? `👤 ${escapeHtml(hazard.assigned_to)}` : "Unassigned"}
+              </div>
             </td>
             <td class="p-2.5">
-              <span class="px-2 py-0.5 rounded text-[10px] font-bold ${
-                h.severity === 'CRITICAL' ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
-                h.severity === 'HIGH' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
-                'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-              }">${h.severity}</span>
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold ${severityBadgeClass(hazard.severity)}">
+                ${escapeHtml(hazard.severity)}
+              </span>
             </td>
-            <td class="p-2.5 font-bold text-amber-400">🔥 ${h.upvotes}</td>
+            <td class="p-2.5 font-bold text-amber-400">🔥 ${hazard.upvotes || 0}</td>
             <td class="p-2.5">
-              ${h.image_data 
-                ? `<span class="px-1.5 py-0.5 rounded text-[10px] bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30">📷 Proof</span>` 
-                : `<span class="text-[10px] text-slate-500">—</span>`}
+              ${hazard.image_data
+                ? '<span class="px-1.5 py-0.5 rounded text-[10px] bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30">📷 Proof</span>'
+                : '<span class="text-[10px] text-slate-500">—</span>'}
             </td>
-            <td class="p-2.5 text-slate-300 font-mono text-[11px]">
-              ${new Date(h.sla_deadline).toLocaleDateString([], {month:'short', day:'numeric'})} ${new Date(h.sla_deadline).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+            <td class="p-2.5 text-slate-300 font-mono text-[11px] ${hazard.is_overdue ? "text-red-400 font-bold" : ""}">
+              ${hazard.is_overdue ? "⚠ " : ""}${slaText}
             </td>
             <td class="p-2.5">
-              <select onchange="changeStatus(${h.id}, this.value)" class="bg-slate-900 border border-slate-600 text-[11px] rounded px-2 py-1 text-slate-200 outline-none focus:border-blue-500 cursor-pointer">
-                <option value="PENDING_TRIAGE" ${h.status === 'PENDING_TRIAGE' ? 'selected' : ''}>PENDING</option>
-                <option value="IN_PROGRESS" ${h.status === 'IN_PROGRESS' ? 'selected' : ''}>DISPATCHED</option>
-                <option value="RESOLVED" ${h.status === 'RESOLVED' ? 'selected' : ''}>RESOLVED</option>
+              <select onchange="changeStatus(${hazard.id}, this.value)"
+                class="bg-slate-900 border border-slate-600 text-[11px] rounded px-2 py-1 text-slate-200 outline-none focus:border-blue-500 cursor-pointer">
+                <option value="PENDING_TRIAGE" ${hazard.status === "PENDING_TRIAGE" ? "selected" : ""}>PENDING</option>
+                <option value="ASSIGNED" ${hazard.status === "ASSIGNED" ? "selected" : ""}>ASSIGNED</option>
+                <option value="IN_PROGRESS" ${hazard.status === "IN_PROGRESS" ? "selected" : ""}>IN PROGRESS</option>
+                <option value="RESOLVED" ${hazard.status === "RESOLVED" ? "selected" : ""}>RESOLVED</option>
               </select>
             </td>
           `;
-          tbody.appendChild(tr);
-        });
 
-      } catch (err) {
-        showToast("Error retrieving spatial hazard queue.", false);
+          tbody.appendChild(row);
+        });
+      } catch (error) {
+        if (error.message === "Session expired") return;
+
+        document.getElementById("ticketCountBadge").innerText = "0 Active";
+        tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-red-400">Could not retrieve work orders.</td></tr>`;
+        showToast(`Error retrieving spatial hazard queue: ${error.message}`, false);
       }
     }
 
     async function changeStatus(id, newStatus) {
       try {
-        const res = await fetch(`${API_BASE}/api/v1/hazards/${id}/status`, {
+        const response = await fetch(`${API_BASE}/api/v1/hazards/${id}/status`, {
           method: "PATCH",
-          headers: { "Content-Type": "application/json" },
+          headers: authHeaders(),
           body: JSON.stringify({ status: newStatus })
         });
-        if (res.ok) {
-          showToast(`Work order #${id} status changed to ${newStatus}`);
-        } else {
-          showToast("Failed to update status", false);
+
+        await parseResponse(response);
+        showToast(`Work order #${id} status changed to ${newStatus}`);
+        loadHazards();
+      } catch (error) {
+        if (error.message !== "Session expired") {
+          showToast(`Failed to update status: ${error.message}`, false);
         }
-      } catch (err) {
-        showToast("Network connection error", false);
       }
     }
 
-    async function publishNotice(e) {
-      e.preventDefault();
-      const btn = document.getElementById('broadcastBtn');
-      btn.disabled = true;
-      btn.innerText = "Publishing Notice...";
+    async function publishNotice(event) {
+      event.preventDefault();
+
+      const button = document.getElementById("broadcastBtn");
+      button.disabled = true;
+      button.innerText = "Publishing Notice...";
 
       const payload = {
-        title: document.getElementById('nTitle').value,
-        category: document.getElementById('nCategory').value,
-        department: document.getElementById('nDept').value,
-        affected_areas: document.getElementById('nAreas').value,
-        description: document.getElementById('nDesc').value,
-        start_time: new Date(document.getElementById('nStart').value).toISOString(),
-        end_time: new Date(document.getElementById('nEnd').value).toISOString(),
-        is_critical: document.getElementById('nCritical').checked
+        title: document.getElementById("nTitle").value.trim(),
+        category: document.getElementById("nCategory").value,
+        department: document.getElementById("nDept").value.trim(),
+        affected_areas: document.getElementById("nAreas").value.trim(),
+        description: document.getElementById("nDesc").value.trim(),
+        start_time: new Date(document.getElementById("nStart").value).toISOString(),
+        end_time: new Date(document.getElementById("nEnd").value).toISOString(),
+        is_critical: document.getElementById("nCritical").checked
       };
 
       try {
-        const res = await fetch(`${API_BASE}/api/v1/notices`, {
+        const response = await fetch(`${API_BASE}/api/v1/notices`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: authHeaders(),
           body: JSON.stringify(payload)
         });
-        if (res.ok) {
-          showToast("Advisory successfully broadcasted to citizen portal!");
-          document.getElementById('noticeForm').reset();
-          setDefaultTimes();
-        } else {
-          showToast("Failed to broadcast advisory.", false);
+
+        await parseResponse(response);
+        showToast("Advisory successfully broadcast to citizen portal.");
+        document.getElementById("noticeForm").reset();
+        setDefaultTimes();
+      } catch (error) {
+        if (error.message !== "Session expired") {
+          showToast(`Failed to broadcast advisory: ${error.message}`, false);
         }
-      } catch (err) {
-        showToast("Error communicating with backend API.", false);
       } finally {
-        btn.disabled = false;
-        btn.innerText = "📢 Broadcast to Citizen Feeds";
+        button.disabled = false;
+        button.innerText = "📢 Broadcast to Citizen Feeds";
       }
     }
 
     function setDefaultTimes() {
       const now = new Date();
-      const later = new Date(now.getTime() + (4 * 60 * 60 * 1000));
-      document.getElementById('nStart').value = now.toISOString().slice(0, 16);
-      document.getElementById('nEnd').value = later.toISOString().slice(0, 16);
+      const later = new Date(now.getTime() + 4 * 60 * 60 * 1000);
+
+      document.getElementById("nStart").value = now.toISOString().slice(0, 16);
+      document.getElementById("nEnd").value = later.toISOString().slice(0, 16);
     }
 
     window.onload = () => {
       initMap();
-      loadHazards();
       setDefaultTimes();
+      loadHazards();
     };
   </script>
 </body>
