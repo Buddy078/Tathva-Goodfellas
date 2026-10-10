@@ -221,7 +221,7 @@ The system is engineered to run completely offline on localhost without external
 
 ```bash
 git clone [https://github.com/Buddy078/Tathva-Goodfellas.git](https://github.com/Buddy078/Tathva-Goodfellas.git)
-cd civicpulse
+cd Tathva-Goodfellas
 ```
 
 ### 2. Boot the Full Environment
